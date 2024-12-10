@@ -1,15 +1,19 @@
+[project]
+name = "MONAIStream"
+readme = "README.md"
+requires-python = ">=3.9"
+license = {text = "Apache2.0"}
+
 [build-system]
 build-backend = "setuptools.build_meta"
-requires = [
-  "wheel",
-  "setuptools",
-  "versioneer-518",
-  "packaging>=20.0"
-]
+requires = ["wheel", "setuptools", "packaging>=20.0"]
+
+[tool.setuptools.packages.find]
+include = ["monai*"]
 
 [tool.black]
 line-length = 120
-target-version = ['py36', 'py37', 'py38']
+target-version = ['py39','py310','py311','py312','py313']
 include = '\.pyi?$'
 exclude = '''
 (
@@ -23,20 +27,13 @@ exclude = '''
     | \.venv
     | \.pytype
     | _build
-    | buck-out
     | build
     | dist
     | plugins
-    | pyds
   )/
-  # also separately exclude a file named versioneer.py
-  | src/monaistream/_version.py
-  | src/monaistream/__init__.py
-  | versioneer.py
 )
 '''
 
-[tool.pytest.ini_options]
-log_cli = true
-log_cli_level = "INFO"
-log_cli_format = "[%(threadName)s] [%(levelname)s] (%(name)s:%(lineno)d) %(message)s"
+[tool.flake8]
+line-length = 120
+
