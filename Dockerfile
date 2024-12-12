@@ -26,5 +26,9 @@ RUN export DEBIAN_FRONTEND=noninteractive && \
     rm -rf /var/lib/apt/lists/* /usr/lib/python3.12/EXTERNALLY-MANAGED /usr/lib/x86_64-linux-gnu/*_static.a 
 
 COPY . /opt/monaistream
+WORKDIR /opt/monaistream
+
 RUN python -m pip install --upgrade --no-cache-dir pip \
-    && python -m pip install /opt/monaistream
+    && python -m pip install . \
+    && python -m pip install -r requirements-dev.txt
+

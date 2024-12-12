@@ -9,8 +9,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from setuptools import setup
 
-# TODO: determine if this legacy support is needed
-if __name__ == "__main__":    
-    setup()
+from unittest import TestCase
+
+class NumpyInplaceTransform(TestCase):
+    def test_import(self):
+        from stream.gstreamer import NumpyInplaceTransform

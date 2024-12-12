@@ -9,8 +9,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from setuptools import setup
+from monai.utils.module import optional_import
 
-# TODO: determine if this legacy support is needed
-if __name__ == "__main__":    
-    setup()
+gi, HAS_GI = optional_import("gi")
+
+if HAS_GI:
+    gi.require_version("Gst", "1.0")
+    gi.require_version("GstBase", "1.0")
+    from gi.repository import Gst
+
+    Gst.init([])
+
+    from .utils import *
+    from .numpy_transforms import *
+    # TODO: import more things here
