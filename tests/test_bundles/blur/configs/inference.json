@@ -1,0 +1,73 @@
+{
+    "imports": [
+        "$import glob",
+        "$import numpy",
+        "$import os"
+    ],
+    "bundle_root": ".",
+    "image_key": "image",
+    "device": "$torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')",
+    "network_def": {
+        "_target_": "GaussianFilter",
+        "spatial_dims": 2,
+        "sigma": 10.0
+    },
+    "network": "$@network_def.to(@device)",
+    "preprocessing": {
+        "_target_": "Compose",
+        "transforms": [
+            {
+                "_target_": "EnsureChannelFirst",
+                "channel_dim": 2
+            },
+            {
+                "_target_": "ScaleIntensity"
+            }
+        ]
+    },
+    "dataset": {
+        "_target_": "Dataset",
+        "data": "$[]",
+        "transform": "@preprocessing"
+    },
+    "dataloader": {
+        "_target_": "DataLoader",
+        "dataset": "@dataset",
+        "batch_size": 1,
+        "shuffle": false,
+        "num_workers": 0
+    },
+    "inferer": {
+        "_target_": "SimpleInferer"
+    },
+    "postprocessing": {
+        "_target_": "Compose",
+        "transforms": [
+            {
+                "_target_": "ScaleIntensityRanged",
+                "keys": "pred",
+                "a_min": 0,
+                "a_max": 1.0,
+                "b_min": 0,
+                "b_max": 255.0,
+                "clip": true,
+                "dtype": "$numpy.uint8"
+            },
+            {
+                "_target_": "AsChannelLastd",
+                "keys": "pred"
+            }
+        ]
+    },
+    "evaluator": {
+        "_target_": "SupervisedEvaluator",
+        "device": "@device",
+        "val_data_loader": "@dataloader",
+        "network": "@network",
+        "inferer": "@inferer",
+        "postprocessing": "@postprocessing"
+    },
+    "run": [
+        "$@evaluator.run()"
+    ]
+}

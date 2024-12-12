@@ -1,0 +1,73 @@
+{
+    "schema": "https://github.com/Project-MONAI/MONAI-extra-test-data/releases/download/0.8.1/meta_schema_20220324.json",
+    "version": "0.0.1",
+    "changelog": {
+        "0.0.1": "Initial"
+    },
+    "monai_version": "1.4.0",
+    "pytorch_version": "2.3.0",
+    "numpy_version": "1.24.4",
+    "required_packages_version": {
+        "pytorch-ignite": "0.4.11"
+    },
+    "name": "Test Blurring Bundle",
+    "task": "Test bundle",
+    "description": "Simple bundle which applies gaussian blur to any inputs",
+    "authors": "Eric Kerfoot",
+    "copyright": "Copyright (c) 2024",
+    "data_source": "n/a",
+    "data_type": "RGB",
+    "image_classes": "three channel data, intensity [0-255]",
+    "label_classes": "n/a",
+    "pred_classes": "three channel data, intensity [0-255]",
+    "eval_metrics": {},
+    "references": [],
+    "network_data_format": {
+        "inputs": {
+            "image": {
+                "type": "magnitude",
+                "format": "RGB",
+                "modality": "regular",
+                "num_channels": 3,
+                "spatial_shape": [
+                    256,
+                    256
+                ],
+                "dtype": "float32",
+                "value_range": [
+                    0,
+                    1
+                ],
+                "is_patch_data": false,
+                "channel_def": {
+                    "0": "R",
+                    "1": "G",
+                    "2": "B"
+                }
+            }
+        },
+        "outputs": {
+            "pred": {
+                "type": "magnitude",
+                "format": "RGB",
+                "modality": "regular",
+                "num_channels": 3,
+                "spatial_shape": [
+                    256,
+                    256
+                ],
+                "dtype": "float32",
+                "value_range": [
+                    0,
+                    1
+                ],
+                "is_patch_data": false,
+                "channel_def": {
+                    "0": "R",
+                    "1": "G",
+                    "2": "B"
+                }
+            }
+        }
+    }
+}

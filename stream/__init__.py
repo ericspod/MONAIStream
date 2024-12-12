@@ -9,7 +9,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from setuptools import setup
+__name__ = "MONAIStream"
 
-if __name__ == "__main__":    
-    setup()
+from .threadsafe import *
+from .verify import *

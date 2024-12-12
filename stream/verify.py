@@ -9,7 +9,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from setuptools import setup
+__all__=["verify_install"]
 
-if __name__ == "__main__":    
-    setup()
+def verify_install():
+    import monai
+    monai.config.print_config()
+
+    import stream
+    print(stream)
+
+
+if __name__ == "__main__":
+    verify_install()
