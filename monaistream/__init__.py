@@ -10,6 +10,7 @@
 # limitations under the License.
 
 __name__ = "MONAIStream"
+__version__ = "placeholder"
 
 from .threadsafe import *
 from .verify import *

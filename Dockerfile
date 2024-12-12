@@ -10,7 +10,8 @@
 # limitations under the License.
 
 
-ARG MONAI_IMAGE=projectmonai/monai:1.4.0
+# TODO: using old version of image because newer CUDA not compatible with my hardware
+ARG MONAI_IMAGE=projectmonai/monai:1.3.2
 
 FROM ${MONAI_IMAGE}
 LABEL maintainer="monai.contact@gmail.com"
@@ -28,7 +29,7 @@ RUN export DEBIAN_FRONTEND=noninteractive && \
 COPY . /opt/monaistream
 WORKDIR /opt/monaistream
 
-RUN python -m pip install --upgrade --no-cache-dir pip \
-    && python -m pip install . \
-    && python -m pip install -r requirements-dev.txt
+RUN python -m pip install --upgrade --no-cache-dir pip monai==1.4.0 && \
+    python -m pip install . && \
+    python -m pip install -r requirements-dev.txt
 

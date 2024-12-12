@@ -109,7 +109,7 @@ function check_import() {
 }
 
 function print_version() {
-  PYTHONPATH=$(pwd)/src ${cmdPrefix}${PY_EXE} -c 'import monaistream; monaistream.print_config()'
+  PYTHONPATH=$(pwd)/src ${cmdPrefix}${PY_EXE} -c 'import monaistream; print(monaistream.__version__)'
 }
 
 function install_deps() {
