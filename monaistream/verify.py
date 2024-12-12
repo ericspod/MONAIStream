@@ -15,8 +15,8 @@ def verify_install():
     import monai
     monai.config.print_config()
 
-    import stream
-    print(stream)
+    import monaistream
+    print(monaistream)
 
 
 if __name__ == "__main__":

@@ -14,4 +14,4 @@ from unittest import TestCase
 
 class NumpyInplaceTransform(TestCase):
     def test_import(self):
-        from stream.gstreamer import NumpyInplaceTransform
+        from monaistream.gstreamer import NumpyInplaceTransform
