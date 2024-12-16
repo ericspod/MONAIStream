@@ -20,18 +20,24 @@ from tests.utils import SkipIfNoModule
 @SkipIfNoModule("gi")
 class TestNumpyInplaceTransform(unittest.TestCase):
     def test_import(self):
-        """Test importation of the transform."""
+        """
+        Test importation of the transform.
+        """
         from monaistream.gstreamer import NumpyInplaceTransform
 
     def test_pipeline(self):
-        """Test the transform can be loaded with `parse_launchv`."""
+        """
+        Test the transform can be loaded with `parse_launchv`.
+        """
         from gi.repository import Gst
 
         pipeline = Gst.parse_launchv(["videotestsrc", "numpyinplacetransform"])
         self.assertIsNotNone(pipeline)
 
     def test_gst_launch(self):
-        """Test launching a separate pipeline subprocess with gst-launch-1.0 correctly imports the transform."""
+        """
+        Test launching a separate pipeline subprocess with gst-launch-1.0 correctly imports the transform.
+        """
         pipeline = "videotestsrc num-buffers=1 ! numpyinplacetransform ! jpegenc ! filesink location=img.jpg"
 
         with TemporaryDirectory() as td:

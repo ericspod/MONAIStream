@@ -14,7 +14,7 @@ Experimental revival of this repo, please comment but don't expect anything to b
 ## Numpy Transform Test
 
 ```sh
-if [ ! -d python ] ; then ln -s monaistream/gstreamer python; fi
-PYTHONPATH=$PWD GST_PLUGIN_PATH=$PWD gst-launch-1.0 videotestsrc num-buffers=1 ! video/x-raw,width=1280,height=720 ! \
+PYTHONPATH=$PWD GST_PLUGIN_PATH=$PWD/monaistream/gstreamer gst-launch-1.0 \
+    videotestsrc num-buffers=1 ! video/x-raw,width=1280,height=720 ! \
     numpyinplacetransform ! jpegenc ! multifilesink location="img_%06d.jpg"
 ```

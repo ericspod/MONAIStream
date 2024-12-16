@@ -23,13 +23,13 @@ from monai.utils.module import optional_import
 gi, HAS_GI = optional_import("gi")
 
 if HAS_GI:
-    plugin_path=os.environ.get("GST_PLUGIN_PATH",None)
+    plugin_path = os.environ.get("GST_PLUGIN_PATH", None)
     if plugin_path:
-        plugin_path+=":"+os.path.dirname(__file__)
+        plugin_path += ":" + os.path.dirname(__file__)
     else:
-        plugin_path=os.path.dirname(__file__)
+        plugin_path = os.path.dirname(__file__)
 
-    os.environ["GST_PLUGIN_PATH"]=plugin_path  # set the plugin path so that this directory is searched
+    os.environ["GST_PLUGIN_PATH"] = plugin_path  # set the plugin path so that this directory is searched
 
     gi.require_version("Gst", "1.0")
     gi.require_version("GstBase", "1.0")
@@ -43,6 +43,7 @@ if HAS_GI:
 
     from monaistream.gstreamer.utils import *
     from monaistream.gstreamer.numpy_transforms import *
+
     # TODO: import more things here
 
 # Silently import nothing if gi not present? If gi not present don't annoy user with warning on every import.

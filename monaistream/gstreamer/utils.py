@@ -23,10 +23,16 @@ BYTE_FORMATS = "{RGBx,BGRx,xRGB,xBGR,RGBA,BGRA,ARGB,ABGR,RGB,BGR,GRAY8,GRAY16_BE
 def get_video_pad_template(
     name, direction=Gst.PadDirection.SRC, presence=Gst.PadPresence.ALWAYS, caps_str=f"video/x-raw,format={BYTE_FORMATS}"
 ):
+    """
+    Create a pad from the given template components. 
+    """
     return Gst.PadTemplate.new(name, direction, presence, Gst.Caps.from_string(caps_str))
 
 
 def get_dtype_from_bits(bits):
+    """
+    Get the dtype from the given element size based on assumptions about pixel formats (so not accurate or complete).
+    """
     if bits == 8:
         return np.uint8
     elif bits == 16:
@@ -38,6 +44,9 @@ def get_dtype_from_bits(bits):
 
 
 def get_components(cformat):
+    """
+    Get the number of components for each pixel format, including padded components such as in RGBx.
+    """
     if cformat in ("RGB","BGR"):
         return 3
     if cformat in ("RGBx","BGRx","xRGB","xBGR","RGBA","BGRA","ARGB","ABGR"):
@@ -50,6 +59,11 @@ def get_components(cformat):
 
 @contextmanager
 def map_buffer_to_numpy(buffer, flags, caps, dtype=None):
+    """
+    Map the given buffer with the given flags and the capabilities from its associated pad. The dtype is inferred if not
+    given which may be inaccurate for certain formats. The context object is a Numpy array for the buffer which is
+    unmapped when the context exits. 
+    """
     cstruct = caps.get_structure(0)
     height = cstruct.get_value("height")
     width = cstruct.get_value("width")
@@ -71,7 +85,8 @@ def map_buffer_to_numpy(buffer, flags, caps, dtype=None):
     expected_size = np.product(shape) * dtype.itemsize
     if expected_size != buffer.get_size():
         raise ValueError(
-            f"Buffer size {buffer.get_size()} does not match expected size {expected_size} for shape {shape} and format {cformat}."
+            f"Buffer size {buffer.get_size()} does not match expected size "
+            "{expected_size} for shape {shape} and format {cformat}."
         )
 
     # TODO: byte order for gray formats
