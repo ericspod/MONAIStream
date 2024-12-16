@@ -14,7 +14,7 @@ import numpy as np
 
 from gi.repository import Gst, GObject, GstBase
 
-from .utils import map_buffer_to_numpy, get_video_pad_template
+from monaistream.gstreamer.utils import map_buffer_to_numpy, get_video_pad_template
 
 __all__=["NumpyInplaceTransform"]
 

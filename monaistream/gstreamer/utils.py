@@ -37,28 +37,41 @@ def get_dtype_from_bits(bits):
         raise ValueError(f"No obvious dtype for data items of size {bits}.")
 
 
+def get_components(cformat):
+    if cformat in ("RGB","BGR"):
+        return 3
+    if cformat in ("RGBx","BGRx","xRGB","xBGR","RGBA","BGRA","ARGB","ABGR"):
+        return 4
+    if cformat in ("GRAY8","GRAY16_BE","GRAY16_LE"):
+        return 1
+
+    raise ValueError(f"Format `{cformat}` does not have a known number of components.") 
+    
+
 @contextmanager
 def map_buffer_to_numpy(buffer, flags, caps, dtype=None):
     cstruct = caps.get_structure(0)
     height = cstruct.get_value("height")
     width = cstruct.get_value("width")
+    cformat = cstruct.get_value("format")
 
-    fstruct = GstVideo.video_format_from_string(cstruct.get_value("format"))
+    fstruct = GstVideo.video_format_from_string(cformat)
     ifstruct = GstVideo.video_format_get_info(fstruct)
 
     if dtype is None:
         dtype = get_dtype_from_bits(ifstruct.bits)
 
+    dtype=np.dtype(dtype)
     is_mapped, map_info = buffer.map(flags)
     if not is_mapped:
         raise ValueError(f"Buffer {buffer} failed to map with flags `{flags}`.")
 
-    shape = (height, width, ifstruct.n_components)
+    shape = (height, width, get_components(cformat))
 
-    expected_size = np.product(shape) * (ifstruct.bits // 8)
+    expected_size = np.product(shape) * dtype.itemsize
     if expected_size != buffer.get_size():
         raise ValueError(
-            f"Buffer size {buffer.get_size()} does not match expected size {expected_size} for shape {shape}."
+            f"Buffer size {buffer.get_size()} does not match expected size {expected_size} for shape {shape} and format {cformat}."
         )
 
     # TODO: byte order for gray formats

@@ -103,13 +103,8 @@ function print_usage() {
   exit 1
 }
 
-function check_import() {
-  echo "python: ${PY_EXE}"
-  PYTHONPATH=$(pwd)/src ${cmdPrefix}${PY_EXE} -c "import monaistream"
-}
-
 function print_version() {
-  PYTHONPATH=$(pwd)/src ${cmdPrefix}${PY_EXE} -c 'import monaistream; print(monaistream.__version__)'
+  PYTHONPATH=$(pwd)/src ${cmdPrefix}${PY_EXE} -c 'import monaistream; print("Version", monaistream.__version__)'
 }
 
 function install_deps() {
@@ -118,13 +113,6 @@ function install_deps() {
 }
 
 function clean_py() {
-  # remove coverage history
-  # ${cmdPrefix}${PY_EXE} -m coverage erase
-
-  # uninstall the development package
-  # echo "Uninstalling MONAIStream development files..."
-  # ${cmdPrefix}${PY_EXE} setup.py develop --user --uninstall
-
   # remove temporary files (in the directory of this script)
   TO_CLEAN="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
   echo "Removing temporary files in ${TO_CLEAN}"
@@ -134,8 +122,9 @@ function clean_py() {
 
   find ${TO_CLEAN} -type f -name "*.py[co]" -delete
   find ${TO_CLEAN} -type f -name "*.so" -delete
-  find ${TO_CLEAN} -type d -name "__pycache__" -delete
-  find ${TO_CLEAN} -type d -name ".pytest_cache" -exec rm -r "{}" +
+  find ${TO_CLEAN} -type d -name __pycache__ -delete
+  find ${TO_CLEAN} -type d -name .pytest_cache -exec rm -r "{}" +
+  find ${TO_CLEAN} -type d -name .ipynb_checkpoints -exec rm -r "{}" +
   find ${TO_CLEAN} -maxdepth 1 -type f -name ".coverage.*" -delete
 
   find ${TO_CLEAN} -depth -maxdepth 1 -type d -name ".eggs" -exec rm -r "{}" +
@@ -146,10 +135,6 @@ function clean_py() {
   find ${TO_CLEAN} -depth -maxdepth 1 -type d -name ".pytype" -exec rm -r "{}" +
   find ${TO_CLEAN} -depth -maxdepth 1 -type d -name ".coverage" -exec rm -r "{}" +
   find ${TO_CLEAN} -depth -maxdepth 1 -type d -name "__pycache__" -exec rm -r "{}" +
-}
-
-function torch_validate() {
-  ${cmdPrefix}${PY_EXE} -c 'import torch; print(torch.__version__); print(torch.rand(5,3))'
 }
 
 function print_error_msg() {
@@ -175,7 +160,7 @@ def print_suite(suite):
             print_suite(x)
     else:
         print(suite)
-print_suite(unittest.defaultTestLoader.discover('./tests/unit'))
+print_suite(unittest.defaultTestLoader.discover('./tests'))
 END
   exit 0
 }
@@ -243,10 +228,6 @@ while [[ $# -gt 0 ]]; do
     print_version
     exit 1
     ;;
-  --nou*) # allow --nounittest | --nounittests | --nounittesting  etc.
-    print_error_msg "nounittest option is deprecated, no unit tests is the default setting"
-    print_usage
-    ;;
   *)
     print_error_msg "Incorrect commandline provided, invalid key: $key"
     print_usage
@@ -259,8 +240,9 @@ done
 homedir="$(cd -P "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$homedir"
 
-# python path
-export PYTHONPATH="$homedir:$PYTHONPATH"
+# python path, don't add empty path to end if unset
+PYTHONPATH="${PYTHONPATH:+${PYTHONPATH}:}$homedir"
+export PYTHONPATH
 echo "PYTHONPATH: $PYTHONPATH"
 
 # by default do nothing
@@ -272,8 +254,6 @@ if [ $doDryRun = true ]; then
   # commands are echoed instead of ran
   cmdPrefix="dryrun "
   function dryrun() { echo "    " "$@"; }
-else
-  check_import
 fi
 
 if [ $doCleanup = true ]; then
@@ -430,9 +410,7 @@ fi
 # unit tests
 if [ $doUnitTests = true ]; then
   echo "${separator}${blue}unittests${noColor}"
-  torch_validate
-
-  ${cmdPrefix}${cmd} -m unittest tests --no-summary -x
+  ${cmdPrefix}${cmd} -m unittest -c $*
 fi
 
 # report on coverage

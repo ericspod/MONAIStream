@@ -14,13 +14,24 @@ from monai.utils.module import optional_import
 gi, HAS_GI = optional_import("gi")
 
 if HAS_GI:
+    import os
+    plugin_path=os.environ.get("GST_PLUGIN_PATH",None)
+    if plugin_path:
+        plugin_path+=":"+os.path.dirname(__file__)
+    else:
+        plugin_path=os.path.dirname(__file__)
+
+    os.environ["GST_PLUGIN_PATH"]=plugin_path
+
     gi.require_version("Gst", "1.0")
     gi.require_version("GstBase", "1.0")
     gi.require_version("GstVideo", "1.0")
     from gi.repository import Gst
 
     Gst.init([])
+    # Gst.debug_set_active(True)
+    # Gst.debug_set_default_threshold(5)
 
-    from .utils import *
-    from .numpy_transforms import *
+    from monaistream.gstreamer.utils import *
+    from monaistream.gstreamer.numpy_transforms import *
     # TODO: import more things here

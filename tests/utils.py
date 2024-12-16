@@ -9,8 +9,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-__name__ = "MONAIStream"
-__version__ = "0.0.0"
+import unittest
+from monai.utils.module import optional_import
 
-from .threadsafe import *
-from .verify import *
+
+class SkipIfNoModule:
+    """Decorator to be used if test should be skipped when optional module is not present."""
+
+    def __init__(self, module_name):
+        self.module_name = module_name
+        self.module_missing = not optional_import(self.module_name)[1]
+        self.deco = unittest.skipIf(self.module_missing, f"Optional module not present: {self.module_name}")
+
+    def __call__(self, obj):
+        return self.deco(obj)
