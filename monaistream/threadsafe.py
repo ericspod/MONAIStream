@@ -20,6 +20,7 @@ from monai.utils.enums import CommonKeys
 
 __all__ = ["IterableBufferDataset", "StreamSinkTransform"]
 
+
 class IterableBufferDataset(torch.utils.data.IterableDataset):
     """Defines a iterable dataset using a Queue object to permit asynchronous additions of new items, eg. frames."""
 

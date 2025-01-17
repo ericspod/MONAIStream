@@ -91,7 +91,9 @@ def map_buffer_to_numpy(buffer, flags, caps, dtype=None):
 
     # TODO: byte order for gray formats
 
+    bufarray = np.ndarray(shape, dtype=dtype, buffer=map_info.data)
+    
     try:
-        yield np.ndarray(shape, dtype=dtype, buffer=map_info.data)
+        yield bufarray
     finally:
         buffer.unmap(map_info)
