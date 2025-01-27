@@ -10,6 +10,8 @@
 # limitations under the License.
 
 import unittest
+
+import torch
 from monai.utils.module import optional_import
 
 
@@ -23,3 +25,10 @@ class SkipIfNoModule:
 
     def __call__(self, obj):
         return self.deco(obj)
+
+
+def skip_if_no_cuda(obj):
+    """
+    Skip the unit tests if torch.cuda.is_available is False.
+    """
+    return unittest.skipUnless(torch.cuda.is_available(), "Skipping CUDA-based tests")(obj)

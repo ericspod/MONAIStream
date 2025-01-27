@@ -9,12 +9,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from contextlib import contextmanager
-import numpy as np
 
-from gi.repository import Gst, GObject, GstBase
+from gi.repository import GObject, Gst, GstBase
 
-from monaistream.gstreamer.utils import map_buffer_to_numpy, get_video_pad_template
+from monaistream.gstreamer.utils import (get_video_pad_template,
+                                         map_buffer_to_numpy)
 
 __all__=["NumpyInplaceTransform"]
 

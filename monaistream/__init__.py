@@ -12,5 +12,6 @@
 __name__ = "MONAIStream"
 __version__ = "0.0.0"
 
+from .simple_inference import *
 from .threadsafe import *
 from .verify import *

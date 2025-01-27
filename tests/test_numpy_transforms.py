@@ -11,9 +11,10 @@
 
 import os
 import sys
-from tempfile import TemporaryDirectory
-from subprocess import check_call, CalledProcessError
 import unittest
+from subprocess import CalledProcessError, check_call
+from tempfile import TemporaryDirectory
+
 from tests.utils import SkipIfNoModule
 
 

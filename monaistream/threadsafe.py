@@ -9,12 +9,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from queue import Empty, Queue
+from threading import RLock, Thread
 from typing import Callable
 
 import torch
-
-from queue import Empty, Queue
-from threading import Thread, RLock
 from monai.transforms import Transform
 from monai.utils.enums import CommonKeys
 

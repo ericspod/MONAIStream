@@ -10,8 +10,9 @@
 # limitations under the License.
 
 from contextlib import contextmanager
-import numpy as np
 
+import numpy as np
+import torch
 from gi.repository import Gst, GstVideo
 
 __all__ = ["BYTE_FORMATS", "get_dtype_from_bits", "map_buffer_to_numpy"]
@@ -97,3 +98,16 @@ def map_buffer_to_numpy(buffer, flags, caps, dtype=None):
         yield bufarray
     finally:
         buffer.unmap(map_info)
+
+
+def map_buffer_to_tensor(buffer, flags, caps, dtype=None):
+    with map_buffer_to_numpy(buffer, flags, caps, dtype) as npbuf: 
+        yield torch.as_tensor(npbuf)
+
+
+def get_buffer_tensor(buffer, flags, caps, dtype=None,device="cpu"):
+    with map_buffer_to_tensor(buffer, flags, caps, dtype) as npbuf:
+        out=torch.zeros_like(npbuf,device=device)
+        out[:]=npbuf
+        return out
+    

@@ -18,6 +18,7 @@ variable and has a "python" symlink linking to its directory so that this mechan
 """
 
 import os
+
 from monai.utils.module import optional_import
 
 gi, HAS_GI = optional_import("gi")
@@ -41,8 +42,8 @@ if HAS_GI:
     # Gst.debug_set_active(True)
     # Gst.debug_set_default_threshold(5)
 
-    from monaistream.gstreamer.utils import *
     from monaistream.gstreamer.numpy_transforms import *
+    from monaistream.gstreamer.utils import *
 
     # TODO: import more things here
 
