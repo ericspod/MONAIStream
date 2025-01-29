@@ -10,45 +10,57 @@
 # limitations under the License.
 
 import sys
-import traceback
-import monaistream.gstreamer
-import gi
-from gi.repository import Gst, GLib
+from typing import Callable
+from monaistream.gstreamer import Gst, GLib
 
 
-def default_message(bus: Gst.Bus, message: Gst.Message, loop: GLib.MainLoop):
+def default_message_handler(bus: Gst.Bus, message: Gst.Message, loop: GLib.MainLoop):
     if message.type == Gst.MessageType.EOS:
-        print("End of stream")
         loop.quit()
     elif message.type == Gst.MessageType.ERROR:
         err, debug = message.parse_error()
-        print(err, debug,file=sys.stderr)
+        print(err, debug, file=sys.stderr)
         loop.quit()
     elif message.type == Gst.MessageType.WARNING:
         err, debug = message.parse_warning()
-        print(err, debug,file=sys.stderr)
+        print(err, debug, file=sys.stderr)
 
     return True
 
-def launch(args):
-    args=list(map(str,args))
-    if not args:
-        raise ValueError("No arguments provided, a list of elements or a pipeline string is required.")
-    
-    if len(args)==1:
-        command=args[0]
-    elif "!" in args:
-        command = " ".join(args)
+
+def launch(args: list[str] | str, message_handler: Callable = default_message_handler):
+    """
+    Defines a launching program for GStreamer like gst-launch but with MONAIStream plugin classes loaded. The `args`
+    argument is a list of strings containing a single full pipeline command line, a list of strings containing a
+    transform and its arguments (with no ! separator), or a list of words as if on the command line (with ! separator).
+
+    Example::
+
+        python -m monaistream.gstreamer.launch videotestsrc num-buffers=1 ! jpegenc ! filesink location=img.jpg
+
+    """
+
+    if isinstance(args, str):
+        command = args
     else:
-        command = " ! ".join(args)
+        args = list(map(str, args))
+        if not args:
+            raise ValueError("No arguments provided, a list of elements or a pipeline string is required.")
+
+        if len(args) == 1:
+            command = args[0]
+        elif "!" in args:
+            command = " ".join(args)
+        else:
+            command = " ! ".join(args)
 
     pipeline = Gst.parse_launch(command)
 
     loop = GLib.MainLoop()
-    
+
     bus = pipeline.get_bus()
     bus.add_signal_watch()
-    bus.connect("message", default_message, loop)
+    bus.connect("message", message_handler, loop)
 
     pipeline.set_state(Gst.State.PLAYING)
 
@@ -61,27 +73,9 @@ def launch(args):
         if loop and loop.is_running():
             loop.quit()
 
-    # bus = pipeline.get_bus()
-    # bus.add_signal_watch()
-
-    # pipeline.set_state(Gst.State.PLAYING)
-
-    # loop = GLib.MainLoop()
-
-    # bus.connect("message", on_message, loop)
-
-    # try:
-    #     loop.run()
-    # except Exception:
-    #     traceback.print_exc()
-    #     loop.quit()
-
-    # # Stop Pipeline
-    # pipeline.set_state(Gst.State.NULL)
-
 
 if __name__ == "__main__":
     launch(sys.argv[1:])
 
 
-# python -m monaistream.gstreamer.launch videotestsrc num-buffers=1 ! video/x-raw,width=1280,height=720 ! jpegenc ! multifilesink location="img_%06d.jpg"
+# PYTHONOPATH=. python -m monaistream.gstreamer.launch videotestsrc num-buffers=1 ! video/x-raw,width=1280,height=720 ! jpegenc ! multifilesink location="img_%06d.jpg"

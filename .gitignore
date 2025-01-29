@@ -159,3 +159,6 @@ config*.pbtxt
 *.ts
 *.pt
 *.onnx
+
+*.jpg
+*.png

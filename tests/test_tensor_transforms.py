@@ -19,12 +19,12 @@ from tests.utils import SkipIfNoModule
 
 
 @SkipIfNoModule("gi")
-class TestNumpyInplaceTransform(unittest.TestCase):
+class TestTensorInplaceTransform(unittest.TestCase):
     def test_import(self):
         """
         Test importation of the transform.
         """
-        from monaistream.gstreamer.numpy_transforms import NumpyInplaceTransform
+        from monaistream.gstreamer.tensor_transforms import TensorInplaceTransform
 
     def test_pipeline(self):
         """
@@ -34,7 +34,7 @@ class TestNumpyInplaceTransform(unittest.TestCase):
 
         self.assertIn("GST_PLUGIN_PATH", os.environ)
 
-        pipeline = Gst.parse_launchv(["videotestsrc", "numpyinplacetransform"])
+        pipeline = Gst.parse_launchv(["videotestsrc", "tensorinplacetransform"])
         self.assertIsNotNone(pipeline)
 
     def test_gst_launch(self):
@@ -43,7 +43,7 @@ class TestNumpyInplaceTransform(unittest.TestCase):
         """
         import monaistream.gstreamer
 
-        pipeline = "videotestsrc num-buffers=1 ! numpyinplacetransform ! jpegenc ! filesink location=img.jpg"
+        pipeline = "videotestsrc num-buffers=1 ! tensorinplacetransform ! jpegenc ! filesink location=img.jpg"
 
         with TemporaryDirectory() as td:
             try:
