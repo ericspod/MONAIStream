@@ -14,13 +14,12 @@ from typing import TYPE_CHECKING, Any, Callable, Sequence
 
 import torch
 from monai.data import Dataset
-from monai.engines import (SupervisedEvaluator, default_metric_cmp_fn,
-                           default_prepare_batch)
+from monai.engines import SupervisedEvaluator, default_metric_cmp_fn, default_prepare_batch
 from monai.handlers import MeanSquaredError, from_engine
 from monai.inferers import Inferer
 from monai.transforms import Transform, apply_transform
-from monai.utils import (CommonKeys, ForwardMode, IgniteInfo, min_version,
-                         optional_import)
+from monai.utils import CommonKeys, ForwardMode, min_version, optional_import
+from monai.utils.enums import IgniteInfo
 from torch.nn import Module
 
 if TYPE_CHECKING:
@@ -62,9 +61,10 @@ class SimpleInferenceEngine:
 
 class SingleItemDataset(Dataset):
     """
-    This simple dataset only ever has one item and acts as its own iterable. This is used with InferenceEngine to 
+    This simple dataset only ever has one item and acts as its own iterable. This is used with InferenceEngine to
     represent a changeable single item epoch.
     """
+
     def __init__(self, transform: Sequence[Callable] | Callable | None = None) -> None:
         super().__init__([None], transform)
 
@@ -72,13 +72,13 @@ class SingleItemDataset(Dataset):
         self.data[0] = item
 
     def __iter__(self):
-        item=self.data[0]
+        item = self.data[0]
 
         # TODO: use standard way of adding batch dimensions
         if isinstance(item, torch.Tensor):
             yield item[None]
         else:
-            yield {k:v[None] for k,v in item.items()}
+            yield {k: v[None] for k, v in item.items()}
 
 
 class InferenceEngine(SupervisedEvaluator):
@@ -111,7 +111,7 @@ class InferenceEngine(SupervisedEvaluator):
         amp_kwargs: dict | None = None,
         compile: bool = False,
         compile_kwargs: dict | None = None,
-        use_interrupt: bool=True
+        use_interrupt: bool = True,
     ) -> None:
         super().__init__(
             device=device,
@@ -139,7 +139,7 @@ class InferenceEngine(SupervisedEvaluator):
         )
 
         self.logger.setLevel(logging.ERROR)  # probably don't want output for every frame
-        self.use_interrupt=use_interrupt
+        self.use_interrupt = use_interrupt
 
         if use_interrupt:
             self.add_event_handler(Events.ITERATION_COMPLETED, self.interrupt)

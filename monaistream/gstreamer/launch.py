@@ -28,6 +28,29 @@ def default_message_handler(bus: Gst.Bus, message: Gst.Message, loop: GLib.MainL
     return True
 
 
+def default_loop_runner(
+    pipeline: Gst.Pipeline, loop: GLib.MainLoop | None = None, message_handler: Callable | None = None
+):
+    if loop is None:
+        loop = GLib.MainLoop()
+
+    if message_handler is not None:
+        bus = pipeline.get_bus()
+        bus.add_signal_watch()
+        bus.connect("message", message_handler, loop)
+
+    pipeline.set_state(Gst.State.PLAYING)
+
+    try:
+        loop.run()
+    except KeyboardInterrupt:
+        raise
+    finally:
+        pipeline.set_state(Gst.State.NULL)
+        if loop and loop.is_running():
+            loop.quit()
+
+
 def launch(args: list[str] | str, message_handler: Callable = default_message_handler):
     """
     Defines a launching program for GStreamer like gst-launch but with MONAIStream plugin classes loaded. The `args`
@@ -55,27 +78,8 @@ def launch(args: list[str] | str, message_handler: Callable = default_message_ha
             command = " ! ".join(args)
 
     pipeline = Gst.parse_launch(command)
-
-    loop = GLib.MainLoop()
-
-    bus = pipeline.get_bus()
-    bus.add_signal_watch()
-    bus.connect("message", message_handler, loop)
-
-    pipeline.set_state(Gst.State.PLAYING)
-
-    try:
-        loop.run()
-    except KeyboardInterrupt:
-        raise
-    finally:
-        pipeline.set_state(Gst.State.NULL)
-        if loop and loop.is_running():
-            loop.quit()
+    default_loop_runner(pipeline, None, message_handler)
 
 
 if __name__ == "__main__":
     launch(sys.argv[1:])
-
-
-# PYTHONOPATH=. python -m monaistream.gstreamer.launch videotestsrc num-buffers=1 ! video/x-raw,width=1280,height=720 ! jpegenc ! multifilesink location="img_%06d.jpg"

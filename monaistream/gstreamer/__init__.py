@@ -39,7 +39,6 @@ if HAS_GI:
 
     Gst.init([])
 
-    
     # use GST_DEBUG instead https://gstreamer.freedesktop.org/documentation/gstreamer/running.html
     # Gst.debug_set_active(True)
     # Gst.debug_set_default_threshold(5)

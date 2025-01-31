@@ -32,8 +32,8 @@ class PrintTransform(GstBase.BaseTransform):
         """ """
         with map_buffer_to_numpy(buffer, Gst.MapFlags.READ, self.sinkpad.get_current_caps()) as image_array:
             height, width, _ = image_array.shape
-            imin=image_array.min()
-            imax=image_array.max()
+            imin = image_array.min()
+            imax = image_array.max()
 
         print(f"{perf_counter():20} dim={width}x{height} min={imin} max={imax}")
 

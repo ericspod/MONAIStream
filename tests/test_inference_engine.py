@@ -9,6 +9,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import os
 import unittest
 
 import torch
@@ -69,6 +70,9 @@ class TestNumpyInplaceTransform(unittest.TestCase):
         self.assertIsInstance(mets, dict)
         self.assertIn("mse", mets)
         self.assertEqual(mets["mse"], 0)
+
+    def test_bundle_stream(self):
+        bundle_dir=os.path.dirname(__file__)+"/test_bundles/blur"
 
 
 if __name__ == "__main__":

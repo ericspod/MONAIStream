@@ -15,7 +15,7 @@ from monaistream.gstreamer import Gst, GstBase, GObject
 from monaistream.gstreamer.utils import get_video_pad_template
 from monaistream.gstreamer.utils import map_buffer_to_tensor
 
-__all__ = ["TensorInplaceTransform"] #["TensorCallbackTransform"]
+__all__ = ["TensorInplaceTransform"]  # ["TensorCallbackTransform"]
 
 
 class TensorInplaceTransform(GstBase.BaseTransform):
@@ -35,7 +35,7 @@ class TensorInplaceTransform(GstBase.BaseTransform):
             image_array[: height // 2, : width // 2] = 128
 
         return Gst.FlowReturn.OK
-    
+
 
 GObject.type_register(TensorInplaceTransform)
 __gstelementfactory__ = ("tensorinplacetransform", Gst.Rank.NONE, TensorInplaceTransform)
