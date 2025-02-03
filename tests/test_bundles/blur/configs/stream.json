@@ -18,6 +18,10 @@
                 "channel_dim": 2
             },
             {
+                "_target_": "EnsureType",
+                "dtype": "$torch.float32"
+            },
+            {
                 "_target_": "ScaleIntensity"
             }
         ]
@@ -48,7 +52,9 @@
         "preprocessing": "@preprocessing",
         "postprocessing": "@postprocessing"
     },
+    "initialize": [],
     "run": [
         "@streamer"
-    ]
+    ],
+    "finalize": []
 }

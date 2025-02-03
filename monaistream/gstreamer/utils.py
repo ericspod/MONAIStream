@@ -17,14 +17,23 @@ import torch
 from monaistream.gstreamer import Gst, GstVideo
 
 
-__all__ = ["BYTE_FORMATS", "get_dtype_from_bits", "map_buffer_to_numpy", "map_buffer_to_tensor", "get_buffer_tensor"]
+__all__ = [
+    "BYTE_FORMATS",
+    "DEFAULT_CAPS_STR",
+    "get_dtype_from_bits",
+    "map_buffer_to_numpy",
+    "map_buffer_to_tensor",
+    "get_buffer_tensor",
+]
 
 
 BYTE_FORMATS = "{RGBx,BGRx,xRGB,xBGR,RGBA,BGRA,ARGB,ABGR,RGB,BGR,GRAY8,GRAY16_BE,GRAY16_LE}"
 
+DEFAULT_CAPS_STR = f"video/x-raw,format={BYTE_FORMATS}"
+
 
 def get_video_pad_template(
-    name, direction=Gst.PadDirection.SRC, presence=Gst.PadPresence.ALWAYS, caps_str=f"video/x-raw,format={BYTE_FORMATS}"
+    name, direction=Gst.PadDirection.SRC, presence=Gst.PadPresence.ALWAYS, caps_str=DEFAULT_CAPS_STR
 ):
     """
     Create a pad from the given template components.

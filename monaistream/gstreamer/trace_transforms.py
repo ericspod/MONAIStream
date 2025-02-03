@@ -41,4 +41,5 @@ class PrintTransform(GstBase.BaseTransform):
 
 
 GObject.type_register(PrintTransform)
+
 __gstelementfactory__ = ("printtransform", Gst.Rank.NONE, PrintTransform)

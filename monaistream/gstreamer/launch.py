@@ -29,7 +29,9 @@ def default_message_handler(bus: Gst.Bus, message: Gst.Message, loop: GLib.MainL
 
 
 def default_loop_runner(
-    pipeline: Gst.Pipeline, loop: GLib.MainLoop | None = None, message_handler: Callable | None = None
+    pipeline: Gst.Pipeline,
+    loop: GLib.MainLoop | None = None,
+    message_handler: Callable | None = default_message_handler,
 ):
     if loop is None:
         loop = GLib.MainLoop()

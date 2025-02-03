@@ -11,13 +11,17 @@
 
 import os
 import unittest
+from tempfile import TemporaryDirectory
 
 import torch
 from monai.handlers import MeanSquaredError, from_engine
+from monai.bundle import ConfigWorkflow
 from monai.utils import CommonKeys
 from parameterized import parameterized
 
+from monaistream.gstreamer import Gst
 from monaistream import InferenceEngine
+from monaistream.gstreamer.launch import default_loop_runner
 from tests.utils import SkipIfNoModule
 
 DEVICES = ["cpu"]
@@ -61,7 +65,7 @@ class TestNumpyInplaceTransform(unittest.TestCase):
     def test_metric(self, device):
         net = torch.nn.Identity()
         metric = MeanSquaredError(output_transform=from_engine([CommonKeys.IMAGE, CommonKeys.PRED]))
-        engine = InferenceEngine(network=net, device=device, key_val_metric={"mse": metric})
+        engine = InferenceEngine(network=net, device=device, key_val_metric={"mse": metric},use_interrupt=False)
 
         result, mets = engine(self.rand_input.to(device), include_metrics=True)
 
@@ -73,6 +77,21 @@ class TestNumpyInplaceTransform(unittest.TestCase):
 
     def test_bundle_stream(self):
         bundle_dir=os.path.dirname(__file__)+"/test_bundles/blur"
+        bw=ConfigWorkflow(bundle_dir+"/configs/stream.json",bundle_dir+"/configs/metadata.json",workflow_type="infer")
+
+        bw.initialize()
+        cb=bw.run()
+        self.assertEqual(len(cb), 1)
+        self.assertIsInstance(cb[0],InferenceEngine)
+
+        with TemporaryDirectory() as td:
+            pipeline=Gst.parse_launch(f"videotestsrc num-buffers=1 ! tensorcallbacktransform name=t ! jpegenc ! filesink location={td}/img.jpg")
+
+            tcbt=pipeline.get_by_name("t")
+            tcbt.trans_fn=cb[0]
+
+            default_loop_runner(pipeline,None)
+            self.assertTrue(os.path.isfile(os.path.join(td, "img.jpg")))
 
 
 if __name__ == "__main__":

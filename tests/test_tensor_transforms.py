@@ -55,5 +55,26 @@ class TestTensorInplaceTransform(unittest.TestCase):
             self.assertTrue(os.path.isfile(os.path.join(td, "img.jpg")))
 
 
+class TestTensorVideoMixer(unittest.TestCase):
+    def test_gst_launch(self):
+        import monaistream.gstreamer
+
+        pipeline="""
+        gst-launch-1.0 tensorvideomixer name=mixer ! video/x-raw,format={RGB},width=400,height=400 ! jpegenc ! filesink location=img.jpg \
+        videotestsrc num-buffers=1 ! video/x-raw,format={RGB},width=400,height=400 ! mixer. \
+        videotestsrc num-buffers=1 pattern=ball ! video/x-raw,format={RGB},width=400,height=400 ! mixer. \
+        videotestsrc num-buffers=1 pattern=snow ! video/x-raw,format={RGB},width=400,height=400 ! mixer.
+        """
+
+        with TemporaryDirectory() as td:
+            try:
+                check_output(pipeline.strip().split(" "), cwd=td, stderr=STDOUT)
+            except CalledProcessError as cpe:
+                print(f"Output gst-launch-1.0:\n{cpe.output!r}\n{cpe.stderr!r}", file=sys.stderr, flush=True)
+                raise
+
+            self.assertTrue(os.path.isfile(os.path.join(td, "img.jpg")))
+            self.assertTrue(os.path.getsize("img.jpg")>1024)  # file must be large enough to be a valid jpg
+
 if __name__ == "__main__":
     unittest.main()

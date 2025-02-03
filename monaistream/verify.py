@@ -9,13 +9,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-__all__=["verify_install"]
+__all__ = ["verify_install"]
+
 
 def verify_install():
     import monai
+
     monai.config.print_config()
 
     import monaistream
+
     print(monaistream)
 
 

@@ -72,7 +72,7 @@ class SingleItemDataset(Dataset):
         self.data[0] = item
 
     def __iter__(self):
-        item = self.data[0]
+        item = self[0]
 
         # TODO: use standard way of adding batch dimensions
         if isinstance(item, torch.Tensor):
