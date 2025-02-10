@@ -129,14 +129,3 @@ class InferenceEngine(SupervisedEvaluator):
             return out, dict(self.state.metrics)
         else:
             return out
-
-
-if __name__ == "__main__":
-    net = torch.nn.Identity()
-    engine = InferenceEngine(
-        network=net,
-        device="cpu",
-        key_val_metric={"mse": MeanSquaredError(output_transform=from_engine([CommonKeys.IMAGE, CommonKeys.PRED]))},
-    )
-    print(engine(torch.rand(1, 5, 5)))
-    print(engine(torch.rand(1, 6, 6), True))
