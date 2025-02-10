@@ -10,14 +10,14 @@
 # limitations under the License.
 
 import logging
-from typing import TYPE_CHECKING, Any, Callable, Sequence
+from typing import TYPE_CHECKING, Any, Callable, Iterable, Sequence
 
 import torch
-from monai.data import Dataset
+from monai.data import Dataset, DataLoader
 from monai.engines import SupervisedEvaluator, default_metric_cmp_fn, default_prepare_batch
 from monai.handlers import MeanSquaredError, from_engine
 from monai.inferers import Inferer
-from monai.transforms import Transform, apply_transform
+from monai.transforms import Transform
 from monai.utils import CommonKeys, ForwardMode, min_version, optional_import
 from monai.utils.enums import IgniteInfo
 from torch.nn import Module
@@ -31,32 +31,6 @@ else:
     Metric, _ = optional_import("ignite.metrics", version, min_version, "Metric", as_type="decorator")
     Events, _ = optional_import("ignite.engine", version, min_version, "Events", as_type="decorator")
     EventEnum, _ = optional_import("ignite.engine", version, min_version, "EventEnum", as_type="decorator")
-
-
-class SimpleInferenceEngine:
-    """
-    A simple engine-like class is for running inference on a per-input basis, such as with per-frame data in a
-    video stream. It relies on a supplied Inferer instance and a network.
-    """
-
-    def __init__(
-        self, inferer: Inferer, network: Module, preprocess: Callable | None = None, postprocess: Callable | None = None
-    ):
-        self.inferer = inferer
-        self.network = network
-        self.preprocess = preprocess
-        self.postprocess = postprocess
-
-    def __call__(self, inputs: torch.Tensor, *args: Any, **kwargs: Any) -> Any:
-        if self.preprocess:
-            inputs = apply_transform(self.preprocess, inputs)
-
-        outputs = self.inferer(inputs, self.network, *args, **kwargs)
-
-        if self.postprocess:
-            outputs = apply_transform(self.postprocess, outputs)
-
-        return outputs
 
 
 class SingleItemDataset(Dataset):
@@ -93,6 +67,7 @@ class InferenceEngine(SupervisedEvaluator):
         self,
         device: torch.device,
         network: torch.nn.Module,
+        data_loader: Iterable | DataLoader | None = None,
         preprocessing: Transform | None = None,
         non_blocking: bool = False,
         prepare_batch: Callable = default_prepare_batch,
@@ -115,7 +90,7 @@ class InferenceEngine(SupervisedEvaluator):
     ) -> None:
         super().__init__(
             device=device,
-            val_data_loader=SingleItemDataset(preprocessing),
+            val_data_loader=data_loader if data_loader is not None else SingleItemDataset(preprocessing),
             epoch_length=1,
             network=network,  # TODO: auto-convert to given device?
             inferer=inferer,
