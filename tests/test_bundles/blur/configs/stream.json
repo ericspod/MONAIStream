@@ -1,0 +1,60 @@
+{
+    "imports": [
+        "$import numpy"
+    ],
+    "bundle_root": ".",
+    "device": "$torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')",
+    "network_def": {
+        "_target_": "GaussianFilter",
+        "spatial_dims": 2,
+        "sigma": 10.0
+    },
+    "network": "$@network_def.to(@device)",
+    "preprocessing": {
+        "_target_": "Compose",
+        "transforms": [
+            {
+                "_target_": "EnsureChannelFirst",
+                "channel_dim": 2
+            },
+            {
+                "_target_": "EnsureType",
+                "dtype": "$torch.float32"
+            },
+            {
+                "_target_": "ScaleIntensity"
+            }
+        ]
+    },
+    "postprocessing": {
+        "_target_": "Compose",
+        "transforms": [
+            {
+                "_target_": "ScaleIntensityRanged",
+                "keys": "pred",
+                "a_min": 0,
+                "a_max": 1.0,
+                "b_min": 0,
+                "b_max": 255.0,
+                "clip": true,
+                "dtype": "$numpy.uint8"
+            },
+            {
+                "_target_": "AsChannelLastd",
+                "keys": "pred"
+            }
+        ]
+    },
+    "streamer": {
+        "_target_": "monaistream.StreamRunner",
+        "device": "@device",
+        "network": "@network",
+        "preprocessing": "@preprocessing",
+        "postprocessing": "@postprocessing"
+    },
+    "initialize": [],
+    "run": [
+        "@streamer"
+    ],
+    "finalize": []
+}

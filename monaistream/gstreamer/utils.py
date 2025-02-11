@@ -10,21 +10,33 @@
 # limitations under the License.
 
 from contextlib import contextmanager
+
 import numpy as np
+import torch
 
-from gi.repository import Gst, GstVideo
+from monaistream.gstreamer import Gst, GstVideo
 
-__all__ = ["BYTE_FORMATS", "get_dtype_from_bits", "map_buffer_to_numpy"]
+
+__all__ = [
+    "BYTE_FORMATS",
+    "DEFAULT_CAPS_STR",
+    "get_dtype_from_bits",
+    "map_buffer_to_numpy",
+    "map_buffer_to_tensor",
+    "get_buffer_tensor",
+]
 
 
 BYTE_FORMATS = "{RGBx,BGRx,xRGB,xBGR,RGBA,BGRA,ARGB,ABGR,RGB,BGR,GRAY8,GRAY16_BE,GRAY16_LE}"
 
+DEFAULT_CAPS_STR = f"video/x-raw,format={BYTE_FORMATS}"
+
 
 def get_video_pad_template(
-    name, direction=Gst.PadDirection.SRC, presence=Gst.PadPresence.ALWAYS, caps_str=f"video/x-raw,format={BYTE_FORMATS}"
+    name, direction=Gst.PadDirection.SRC, presence=Gst.PadPresence.ALWAYS, caps_str=DEFAULT_CAPS_STR
 ):
     """
-    Create a pad from the given template components. 
+    Create a pad from the given template components.
     """
     return Gst.PadTemplate.new(name, direction, presence, Gst.Caps.from_string(caps_str))
 
@@ -47,22 +59,22 @@ def get_components(cformat):
     """
     Get the number of components for each pixel format, including padded components such as in RGBx.
     """
-    if cformat in ("RGB","BGR"):
+    if cformat in ("RGB", "BGR"):
         return 3
-    if cformat in ("RGBx","BGRx","xRGB","xBGR","RGBA","BGRA","ARGB","ABGR"):
+    if cformat in ("RGBx", "BGRx", "xRGB", "xBGR", "RGBA", "BGRA", "ARGB", "ABGR"):
         return 4
-    if cformat in ("GRAY8","GRAY16_BE","GRAY16_LE"):
+    if cformat in ("GRAY8", "GRAY16_BE", "GRAY16_LE"):
         return 1
 
-    raise ValueError(f"Format `{cformat}` does not have a known number of components.") 
-    
+    raise ValueError(f"Format `{cformat}` does not have a known number of components.")
+
 
 @contextmanager
 def map_buffer_to_numpy(buffer, flags, caps, dtype=None):
     """
     Map the given buffer with the given flags and the capabilities from its associated pad. The dtype is inferred if not
     given which may be inaccurate for certain formats. The context object is a Numpy array for the buffer which is
-    unmapped when the context exits. 
+    unmapped when the context exits.
     """
     cstruct = caps.get_structure(0)
     height = cstruct.get_value("height")
@@ -75,7 +87,7 @@ def map_buffer_to_numpy(buffer, flags, caps, dtype=None):
     if dtype is None:
         dtype = get_dtype_from_bits(ifstruct.bits)
 
-    dtype=np.dtype(dtype)
+    dtype = np.dtype(dtype)
     is_mapped, map_info = buffer.map(flags)
     if not is_mapped:
         raise ValueError(f"Buffer {buffer} failed to map with flags `{flags}`.")
@@ -92,8 +104,21 @@ def map_buffer_to_numpy(buffer, flags, caps, dtype=None):
     # TODO: byte order for gray formats
 
     bufarray = np.ndarray(shape, dtype=dtype, buffer=map_info.data)
-    
+
     try:
         yield bufarray
     finally:
         buffer.unmap(map_info)
+
+
+@contextmanager
+def map_buffer_to_tensor(buffer, flags, caps, dtype=None):
+    with map_buffer_to_numpy(buffer, flags, caps, dtype) as npbuf:
+        yield torch.as_tensor(npbuf)
+
+
+def get_buffer_tensor(buffer, caps, dtype=None, device="cpu"):
+    with map_buffer_to_tensor(buffer, Gst.MapFlags.READ, caps, dtype) as tbuf:
+        out = torch.zeros_like(tbuf, device=device)
+        out[:] = tbuf
+        return out
