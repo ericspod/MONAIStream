@@ -14,8 +14,8 @@ from typing import TYPE_CHECKING, Any, Callable, Iterable, Sequence
 
 import torch
 from monai.data import Dataset, DataLoader
+from monai.data.utils import list_data_collate
 from monai.engines import SupervisedEvaluator, default_metric_cmp_fn, default_prepare_batch
-from monai.handlers import MeanSquaredError, from_engine
 from monai.inferers import Inferer
 from monai.transforms import Transform
 from monai.utils import CommonKeys, ForwardMode, min_version, optional_import
@@ -33,7 +33,7 @@ else:
     EventEnum, _ = optional_import("ignite.engine", version, min_version, "EventEnum", as_type="decorator")
 
 
-__all__ = ["StreamRunner"]
+__all__ = ["SingleItemDataset", "StreamRunner"]
 
 
 class SingleItemDataset(Dataset):
@@ -51,9 +51,12 @@ class SingleItemDataset(Dataset):
     def __iter__(self):
         item = self[0]
 
-        # TODO: use standard way of adding batch dimensions
+        # TODO: use standard way of adding batch dimensions, or do something specific here 
+        # for how groups of frames would be passed?
         if isinstance(item, torch.Tensor):
             yield item[None]
+        elif isinstance(item, Sequence):
+            yield tuple(v[None] for v in item)
         else:
             yield {k: v[None] for k, v in item.items()}
 

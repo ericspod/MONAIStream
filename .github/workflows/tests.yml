@@ -31,7 +31,7 @@ jobs:
         flake8 . --count --exit-zero --max-complexity=10 --max-line-length=121 --statistics
     - name: Run verify program
       run: |
-        PYTHONPATH=. python stream/verify.py
+        PYTHONPATH=. python monaistream/verify.py
     # - name: Test with unittest
     #   run: |
     #     ./runtests.sh --coverage

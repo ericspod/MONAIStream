@@ -128,7 +128,7 @@ function clean_py() {
   find ${TO_CLEAN} -maxdepth 1 -type f -name ".coverage.*" -delete
 
   find ${TO_CLEAN} -depth -maxdepth 1 -type d -name ".eggs" -exec rm -r "{}" +
-  find ${TO_CLEAN} -depth -maxdepth 1 -type d -name "monaistream.egg-info" -exec rm -r "{}" +
+  find ${TO_CLEAN} -depth -maxdepth 1 -type d -name "MONAIStream.egg-info" -exec rm -r "{}" +
   find ${TO_CLEAN} -depth -maxdepth 1 -type d -name "build" -exec rm -r "{}" +
   find ${TO_CLEAN} -depth -maxdepth 1 -type d -name "dist" -exec rm -r "{}" +
   find ${TO_CLEAN} -depth -maxdepth 1 -type d -name ".mypy_cache" -exec rm -r "{}" +
