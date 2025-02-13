@@ -13,10 +13,10 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
-    - name: Set up Python 3.9
+    - name: Set up Python 3.12
       uses: actions/setup-python@v2
       with:
-        python-version: 3.9
+        python-version: 3.12
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
@@ -32,10 +32,10 @@ jobs:
     - name: Run verify program
       run: |
         PYTHONPATH=. python monaistream/verify.py
-    # - name: Test with unittest
-    #   run: |
-    #     ./runtests.sh --coverage
-    # - name: Upload coverage
-    #   uses: codecov/codecov-action@v1
-    #   with:
-    #     file: ./coverage.xml
+    - name: Test with unittest
+      run: |
+        ./runtests.sh --coverage
+    - name: Upload coverage
+      uses: codecov/codecov-action@v1
+      with:
+        file: ./coverage.xml
