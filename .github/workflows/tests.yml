@@ -9,13 +9,15 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
 
     steps:
     - uses: actions/checkout@v2
     - name: Setup GStreamer
-      id: setup_gstreamer
-      uses: blinemedical/setup-gstreamer@v1.4.0
+      run: sudo apt install -y --no-install-recommends ca-certificates build-essential \
+        python3-gst-1.0 gstreamer1.0-python3-plugin-loader gstreamer1.0-plugins-base gstreamer1.0-tools gstreamer1.0-libav \
+        gstreamer1.0-plugins-base-apps gstreamer1.0-plugins-good gstreamer1.0-plugins-bad gstreamer1.0-plugins-ugly \
+        gstreamer1.0-x gstreamer1.0-alsa gstreamer1.0-gl gstreamer1.0-gtk3 gstreamer1.0-qt5 gstreamer1.0-pulseaudio
     - name: Set up Python 3.12
       uses: actions/setup-python@v2
       with:
