@@ -34,7 +34,7 @@ jobs:
         PYTHONPATH=. python monaistream/verify.py
     - name: Test with unittest
       run: |
-        ./runtests.sh --coverage
+        ./runtests.sh --coverage -u 
     # - name: Upload coverage
     #   uses: codecov/codecov-action@v1
     #   with:
