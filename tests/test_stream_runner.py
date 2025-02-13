@@ -13,7 +13,7 @@ import os
 import sys
 import logging
 import unittest
-from typing import Callable
+from typing import Any, Callable
 from tempfile import TemporaryDirectory
 
 import torch
@@ -24,7 +24,7 @@ from parameterized import parameterized
 
 from monaistream.gstreamer import Gst, GstBase, GObject
 from monaistream.gstreamer.utils import get_video_pad_template, map_buffer_to_tensor, get_buffer_tensor
-from monaistream import SingleItemDataset, StreamRunner
+from monaistream import SingleItemDataset, RingBufferDataset, StreamRunner
 from monaistream.gstreamer.launch import default_loop_runner
 from tests.utils import SkipIfNoModule
 
@@ -77,10 +77,27 @@ class TestSingleItemDataset(unittest.TestCase):
         self.assertEqual(out[1].shape, (1,) + tuple(self.rand_input.shape))
 
 
+class TestRingBufferDataset(unittest.TestCase):
+    def setUp(self):
+        self.rand_input = torch.rand(1, 3, 3)
+
+    def test_single_input(self):
+        ds = RingBufferDataset(5)
+        ds.set_item(self.rand_input)
+
+        out = first(ds)
+
+        self.assertIsInstance(out, tuple)
+        self.assertEqual(len(out), 5)
+
+        for i in out:
+            self.assertEqual(i.shape, (1,) + tuple(self.rand_input.shape))
+
+
 @SkipIfNoModule("ignite")
 class TestStreamRunner(unittest.TestCase):
     def setUp(self):
-        self.rand_input = torch.rand(1, 16, 16)
+        self.rand_input = torch.rand(1, 3, 5)
         self.bundle_dir = os.path.dirname(__file__) + "/test_bundles/blur"
         # fileConfig(os.path.join(self.bundle_dir, "configs","logging.conf"))
 
@@ -110,6 +127,60 @@ class TestStreamRunner(unittest.TestCase):
         self.assertEqual(result2.shape, self.rand_input.shape)
 
         self.assertEqual(engine.state.iteration, 1)
+
+    @parameterized.expand(DEVICES)
+    def test_ring_buffer(self, device):
+        from monai.engines.utils import default_prepare_batch, PrepareBatch
+
+        class TuplePrepareBatch(PrepareBatch):
+            def __call__(
+                self,
+                batchdata: dict[str, torch.Tensor],
+                device: str | torch.device | None = None,
+                non_blocking: bool = False,
+                **kwargs: Any,
+            ) -> Any:
+                assert isinstance(batchdata, tuple)
+                return tuple(default_prepare_batch(b, device, non_blocking, **kwargs) for b in batchdata), None
+
+        class FakeMultiInputNet(torch.nn.Module):
+            def forward(self,x):
+                assert isinstance(x, tuple)
+                assert isinstance(x[0], torch.Tensor), str(x[0])
+                return torch.as_tensor([i.mean() for i in x])
+
+        with self.subTest("Identity Net"):
+            engine = StreamRunner(
+                data_loader=RingBufferDataset(5),
+                prepare_batch=TuplePrepareBatch(),
+                network=torch.nn.Identity(),
+                device=device,
+                use_interrupt=False,
+            )
+
+            result = engine(self.rand_input)
+
+            self.assertIsInstance(result, list)
+            self.assertEqual(len(result), 5)
+
+            for r,_ in result:
+                self.assertIsInstance(r, torch.Tensor)
+                self.assertEqual(r.shape, self.rand_input.shape)
+                self.assertEqual(r.device, torch.device(device))
+
+        with self.subTest("MultiInput Net"):
+            engine = StreamRunner(
+                data_loader=RingBufferDataset(5),
+                prepare_batch=TuplePrepareBatch(),
+                network=FakeMultiInputNet(),
+                device=device,
+                use_interrupt=False,
+            )
+
+            result = engine(self.rand_input)
+
+            self.assertIsInstance(result, torch.Tensor)
+            self.assertEqual(result.shape,(1,5))
 
     @parameterized.expand(DEVICES)
     def test_metric(self, device):

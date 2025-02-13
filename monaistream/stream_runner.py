@@ -32,7 +32,7 @@ else:
     EventEnum, _ = optional_import("ignite.engine", version, min_version, "EventEnum", as_type="decorator")
 
 
-__all__ = ["SingleItemDataset", "StreamRunner"]
+__all__ = ["SingleItemDataset", "RingBufferDataset", "StreamRunner"]
 
 
 class SingleItemDataset(Dataset):
@@ -58,6 +58,18 @@ class SingleItemDataset(Dataset):
             yield tuple(v[None] for v in item)
         else:
             yield {k: v[None] for k, v in item.items()}
+
+
+class RingBufferDataset(SingleItemDataset):
+    def __init__(self, num_values=1, transform: Sequence[Callable] | Callable | None = None) -> None:
+        super().__init__(transform)
+        self.num_values = num_values
+
+    def set_item(self, item):
+        if self.data[0] is None:
+            self.data[0] = (item,) * self.num_values
+        else:
+            self.data[0] = self.data[0][1:] + (item,)
 
 
 class StreamRunner(SupervisedEvaluator):
