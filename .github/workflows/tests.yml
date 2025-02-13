@@ -35,7 +35,7 @@ jobs:
     - name: Test with unittest
       run: |
         ./runtests.sh --coverage
-    - name: Upload coverage
-      uses: codecov/codecov-action@v1
-      with:
-        file: ./coverage.xml
+    # - name: Upload coverage
+    #   uses: codecov/codecov-action@v1
+    #   with:
+    #     file: ./coverage.xml
