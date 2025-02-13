@@ -117,8 +117,8 @@ def map_buffer_to_tensor(buffer, flags, caps, dtype=None):
         yield torch.as_tensor(npbuf)
 
 
-def get_buffer_tensor(buffer, caps, dtype=None, device="cpu"):
-    with map_buffer_to_tensor(buffer, Gst.MapFlags.READ, caps, dtype) as tbuf:
+def get_buffer_tensor(buffer, caps, flags=Gst.MapFlags.WRITE, dtype=None, device="cpu"):
+    with map_buffer_to_tensor(buffer, flags, caps, dtype) as tbuf:
         out = torch.zeros_like(tbuf, device=device)
         out[:] = tbuf
         return out

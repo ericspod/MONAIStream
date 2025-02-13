@@ -50,7 +50,8 @@
         "device": "@device",
         "network": "@network",
         "preprocessing": "@preprocessing",
-        "postprocessing": "@postprocessing"
+        "postprocessing": "@postprocessing",
+        "use_interrupt": false
     },
     "initialize": [],
     "run": [

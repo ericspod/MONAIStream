@@ -10,10 +10,11 @@
 # limitations under the License.
 
 import os
+import sys
+import logging
 import unittest
 from typing import Callable
 from tempfile import TemporaryDirectory
-from logging.config import fileConfig
 
 import torch
 from monai.handlers import MeanSquaredError, from_engine
@@ -26,6 +27,7 @@ from monaistream.gstreamer.utils import get_video_pad_template, map_buffer_to_te
 from monaistream import SingleItemDataset, StreamRunner
 from monaistream.gstreamer.launch import default_loop_runner
 from tests.utils import SkipIfNoModule
+
 
 DEVICES = ["cpu"]
 if torch.cuda.is_available:
@@ -43,9 +45,10 @@ class TensorCallbackTransform(GstBase.BaseTransform):
     def __init__(self, trans_fn: Callable | None = None):
         super().__init__()
         self.trans_fn = trans_fn
+        self.device = "cpu"
 
     def do_transform(self, inbuf: Gst.Buffer, outbuf: Gst.Buffer) -> Gst.FlowReturn:
-        intensor = get_buffer_tensor(inbuf, self.srcpad.get_current_caps())
+        intensor = get_buffer_tensor(inbuf, self.srcpad.get_current_caps(), device=self.device)
         with map_buffer_to_tensor(outbuf, Gst.MapFlags.WRITE, self.sinkpad.get_current_caps()) as outtensor:
             outtensor[:] = self.trans_fn(intensor)
 
@@ -75,16 +78,16 @@ class TestSingleItemDataset(unittest.TestCase):
 
 
 @SkipIfNoModule("ignite")
-class TestNumpyInplaceTransform(unittest.TestCase):
+class TestStreamRunner(unittest.TestCase):
     def setUp(self):
         self.rand_input = torch.rand(1, 16, 16)
         self.bundle_dir = os.path.dirname(__file__) + "/test_bundles/blur"
-        fileConfig(os.path.join(self.bundle_dir, "configs","logging.conf"))
+        # fileConfig(os.path.join(self.bundle_dir, "configs","logging.conf"))
 
     @parameterized.expand(DEVICES)
     def test_single_input(self, device):
         net = torch.nn.Identity()
-        engine = StreamRunner(network=net, device=device)
+        engine = StreamRunner(network=net, device=device, use_interrupt=False)
 
         result = engine(self.rand_input)
 
@@ -95,7 +98,7 @@ class TestNumpyInplaceTransform(unittest.TestCase):
     @parameterized.expand(DEVICES)
     def test_two_inputs(self, device):
         net = torch.nn.Identity()
-        engine = StreamRunner(network=net, device=device)
+        engine = StreamRunner(network=net, device=device, use_interrupt=False)
 
         result1 = engine(self.rand_input.to(device))
         result2 = engine(self.rand_input.to(device))
@@ -122,30 +125,33 @@ class TestNumpyInplaceTransform(unittest.TestCase):
         self.assertIn("mse", mets)
         self.assertEqual(mets["mse"], 0)
 
-    # def test_bundle_stream(self):
-    #     bw = ConfigWorkflow(
-    #         self.bundle_dir + "/configs/stream.json", self.bundle_dir + "/configs/metadata.json", workflow_type="infer"
-    #     )
+    @parameterized.expand(DEVICES)
+    def test_bundle_stream(self, device):
+        bw = ConfigWorkflow(
+            self.bundle_dir + "/configs/stream.json", self.bundle_dir + "/configs/metadata.json", workflow_type="infer"
+        )
+        bw.device = device
 
-    #     bw.initialize()
-    #     cb = bw.run()
-    #     self.assertEqual(len(cb), 1)
-    #     self.assertIsInstance(cb[0], StreamRunner)
+        bw.initialize()
+        cb = bw.run()
+        self.assertEqual(len(cb), 1)
+        self.assertIsInstance(cb[0], StreamRunner)
 
-    #     with TemporaryDirectory() as td:
-    #         RunnerType = GObject.type_register(TensorCallbackTransform)
-    #         Gst.Element.register(None, "tensorcallbacktransform", Gst.Rank.NONE, RunnerType)
-    #         img = os.path.join(td, "img.jpg")
+        with TemporaryDirectory() as td:
+            RunnerType = GObject.type_register(TensorCallbackTransform)
+            Gst.Element.register(None, "tensorcallbacktransform", Gst.Rank.NONE, RunnerType)
+            img = os.path.join(td, "img.jpg")
 
-    #         pipeline = Gst.parse_launch(
-    #             f"videotestsrc num-buffers=1 ! tensorcallbacktransform name=t ! jpegenc ! filesink location={img}"
-    #         )
+            pipeline = Gst.parse_launch(
+                f"videotestsrc num-buffers=1 ! tensorcallbacktransform name=t ! jpegenc ! filesink location={img}"
+            )
 
-    #         tcbt = pipeline.get_by_name("t")
-    #         tcbt.trans_fn = cb[0]
+            tcbt = pipeline.get_by_name("t")
+            tcbt.device = device
+            tcbt.trans_fn = cb[0]
 
-    #         default_loop_runner(pipeline, None)
-    #         self.assertTrue(os.path.isfile(img))
+            default_loop_runner(pipeline, None)
+            self.assertTrue(os.path.isfile(img))
 
 
 if __name__ == "__main__":

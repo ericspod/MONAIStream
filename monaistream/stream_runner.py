@@ -13,14 +13,13 @@ import logging
 from typing import TYPE_CHECKING, Any, Callable, Iterable, Sequence
 
 import torch
+
 from monai.data import Dataset, DataLoader
-from monai.data.utils import list_data_collate
 from monai.engines import SupervisedEvaluator, default_metric_cmp_fn, default_prepare_batch
 from monai.inferers import Inferer
 from monai.transforms import Transform
 from monai.utils import CommonKeys, ForwardMode, min_version, optional_import
 from monai.utils.enums import IgniteInfo
-from torch.nn import Module
 
 if TYPE_CHECKING:
     from ignite.engine import Engine, Events, EventEnum
@@ -51,7 +50,7 @@ class SingleItemDataset(Dataset):
     def __iter__(self):
         item = self[0]
 
-        # TODO: use standard way of adding batch dimensions, or do something specific here 
+        # TODO: use standard way of adding batch dimensions, or do something specific here
         # for how groups of frames would be passed?
         if isinstance(item, torch.Tensor):
             yield item[None]
@@ -127,6 +126,7 @@ class StreamRunner(SupervisedEvaluator):
 
     def __call__(self, item: Any, include_metrics: bool = False) -> Any:
         self.data_loader.set_item(item)
+
         self.run()
 
         out = self.state.output[0][CommonKeys.PRED]
