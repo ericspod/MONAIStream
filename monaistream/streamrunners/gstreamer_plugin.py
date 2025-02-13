@@ -1,21 +1,17 @@
 import inspect
+import threading
 
 import gi
 
 gi.require_version("Gst", "1.0")
 gi.require_version("GstBase", "1.0")
-from gi.repository import Gst, GLib, GObject, GstBase
+from gi.repository import Gst, GstBase
 
 import numpy as np
 
 
+
 FORMATS = "{RGBx,BGRx,xRGB,xBGR,RGBA,BGRA,ARGB,ABGR,RGB,BGR}"
-
-
-def register(runner_type, runner_alias):
-    RunnerType = GObject.type_register(runner_type)
-    if not Gst.Element.register(None, runner_alias, Gst.Rank.NONE, RunnerType):
-        raise RuntimeError(f"Failed to register {runner_alias}; you may be missing gst-python plugins")
 
 
 
@@ -114,6 +110,7 @@ class GstInPlaceStreamRunner(GstBase.BaseTransform):
         return Gst.FlowReturn.OK
 
 
+
 class GstAdaptorStreamRunner(GstBase.BaseTransform):
     """
     TODO:
@@ -183,13 +180,17 @@ class GstAdaptorStreamRunner(GstBase.BaseTransform):
            "src", Gst.PadDirection.SRC, Gst.PadPresence.ALWAYS, Gst.Caps.from_string(f"video/x-raw,format={FORMATS}")
         ),
     )
+
+
     def __init__(self, width=None, height=None):
         super().__init__()
         self.width = width
         self.height = height
 
+
     def do_op(self, data):
         raise NotImplementedError()
+
 
     def do_get_property(self, prop):
         if prop.name == "width":
@@ -199,6 +200,7 @@ class GstAdaptorStreamRunner(GstBase.BaseTransform):
         else:
             raise AttributeError(f"No such property {prop.name}")
 
+
     def do_set_property(self, prop, value):
         if prop.name == "width":
             self.width = value
@@ -206,6 +208,7 @@ class GstAdaptorStreamRunner(GstBase.BaseTransform):
             self.height = value
         else:
             raise AttributeError(f"No such property {prop.name}")
+
 
     def do_transform(self, in_buffer: Gst.Buffer, out_buffer: Gst.Buffer) -> Gst.FlowReturn:
 
@@ -236,6 +239,7 @@ class GstAdaptorStreamRunner(GstBase.BaseTransform):
         return Gst.FlowReturn.OK
 
 
+
 class GstMultiInputStreamRunner(GstBase.Aggregator):
 
     __gstmetadata__ = ('MultiInputStreamRunner', 'Filter', 'StreamRunner for handling multiple inputs', 'MONAI')
@@ -249,6 +253,7 @@ class GstMultiInputStreamRunner(GstBase.Aggregator):
         ),
     )
 
+
     def __init__(self):
         super().__init__()
 
@@ -256,8 +261,10 @@ class GstMultiInputStreamRunner(GstBase.Aggregator):
 
         self.input_count = 2
 
+
     def do_op(self, data):
         raise NotImplementedError()
+
 
     def collect_images(self, agg, pad, images):
 
@@ -273,6 +280,7 @@ class GstMultiInputStreamRunner(GstBase.Aggregator):
         buf.unmap(map_info)
 
         return True
+
 
     def do_aggregate(self, timeout):
         images = list()
@@ -290,6 +298,7 @@ class GstMultiInputStreamRunner(GstBase.Aggregator):
         return Gst.FlowReturn.OK
 
 
+
 class GstMultiInputStreamRunner2(GstBase.Aggregator):
 
     __gstmetadata__ = ('MultiInputStreamRunner2', 'Filter', 'StreamRunner for handling multiple inputs', 'MONAI')
@@ -303,9 +312,11 @@ class GstMultiInputStreamRunner2(GstBase.Aggregator):
         ),
     )
 
+
     def __init__(self):
         super(GstMultiInputStreamRunner2, self).__init__()
         self.input_pads = []  # Store requested pads
+
 
     def do_request_new_pad(self, templ, name, caps=None):
         """Handles dynamic pad creation when requested by the pipeline."""
@@ -317,9 +328,11 @@ class GstMultiInputStreamRunner2(GstBase.Aggregator):
             print(f"Failed to create sink pad: {name}")
         return pad
 
+
     def do_op(self, images):
         """Process images and return output image"""
         raise NotImplementedError()
+
 
     def do_aggregate(self):
         buffers = []
@@ -358,6 +371,7 @@ class GstMultiInputStreamRunner2(GstBase.Aggregator):
         return self.finish_buffer(output_buffer)
 
 
+
 class GstMultiInputStreamRunner3(GstBase.Aggregator):
 
     __gstmetadata__ = ('MultiInputStreamRunner3', 'Filter', 'StreamRunner for handling multiple inputs', 'MONAI')
@@ -371,9 +385,11 @@ class GstMultiInputStreamRunner3(GstBase.Aggregator):
         ),
     )
 
+
     def __init__(self):
         super(GstMultiInputStreamRunner3, self).__init__()
         self.input_pads = []  # Store requested pads
+
 
     def do_start(self):
         """Ensure pads are created when the element starts."""
@@ -387,11 +403,12 @@ class GstMultiInputStreamRunner3(GstBase.Aggregator):
             else:
                 print(f"Failed to create sink pad {i}")
                 return False
-        return True  # Signal successful start
+
 
     def do_op(self, images):
         """Process images and return output image"""
         raise NotImplementedError()
+
 
     def do_aggregate(self):
         buffers = []
@@ -429,11 +446,13 @@ class GstMultiInputStreamRunner3(GstBase.Aggregator):
         # Push the buffer to the src pad
 
 
-class GstMultiInOutStreamRunner(Gst.Element):
-    __gstmetadata__ = ('MultiInOutStreamRunner', 'Filter', 'StreamRunner for handling multiple inputs and outputs', 'MONAI')
+
+class GstMultiInOutStreamRunnerPrototype1(Gst.Element):
+    __gstmetadata__ = ('GstMultiInOutStreamRunnerPrototype1', 'Filter', 'StreamRunner for handling multiple inputs and outputs', 'MONAI')
+
 
     def __init__(self, input_formats, output_formats):
-        super(GstMultiInOutStreamRunner, self).__init__()
+        super().__init__()
 
         # Create sink pads (inputs)
         self.input_pads = list()
@@ -494,8 +513,9 @@ class GstMultiInOutStreamRunner(Gst.Element):
         return Gst.FlowReturn.OK
 
 
-class GstMultiInOutStreamRunner2(Gst.Element):
-    __gstmetadata__ = ("GstMultiInOutStreamRunner2", "Filter", "Overlay images", "Author")
+
+class GstMultiInOutStreamRunnerPrototype2(Gst.Element):
+    __gstmetadata__ = ("GstMultiInOutStreamRunnerPrototype2", "Filter", "Overlay images", "Author")
 
     __gsttemplates__ = (
         Gst.PadTemplate.new("sink_1",
@@ -517,7 +537,7 @@ class GstMultiInOutStreamRunner2(Gst.Element):
     )
 
     def __init__(self):
-        super(GstMultiInOutStreamRunner2, self).__init__()
+        super().__init__()
 
         # Pads
         self.sinkpad_1 = Gst.Pad.new_from_template(
@@ -548,143 +568,133 @@ class GstMultiInOutStreamRunner2(Gst.Element):
         if self.buffer_1 and self.buffer_2:
             # Process overlay using GStreamer compositor or blending
             # (this is a simplified approach; normally, you'd use a Gst.VideoMixer or Gst.OverlayComposition)
-            
+
             # Push buffer_1 with buffer_2 overlaid on top-left
-            self.srcpad_1.push(self.buffer_1)  
+            self.srcpad_1.push(self.buffer_1)
             # Push buffer_2 with buffer_1 overlaid on top-left
             self.srcpad_2.push(self.buffer_2)
 
         return Gst.FlowReturn.OK
 
 
-class GstMultiInOutStreamRunner2_5(Gst.Element):
-    __gstmetadata__ = ("GstMultiInOutStreamRunner2", "Filter", "Overlay images", "Author")
-
+class GstMultiInOutStreamRunnerPrototype3(Gst.Element):
+    __gstmetadata__ = ("GstMultiInOutStreamRunnerPrototype3", "Filter", "Overlay images", "Author")
     __gsttemplates__ = (
+        Gst.PadTemplate.new("sink_0",
+                            Gst.PadDirection.SINK,
+                            Gst.PadPresence.ALWAYS,
+                            Gst.Caps.from_string("video/x-raw, format=BGR, width=256, height=256")),
         Gst.PadTemplate.new("sink_1",
                             Gst.PadDirection.SINK,
                             Gst.PadPresence.ALWAYS,
-                            Gst.Caps.from_string("video/x-raw, width=256, height=256")),
-        Gst.PadTemplate.new("sink_2",
-                            Gst.PadDirection.SINK,
+                            Gst.Caps.from_string("video/x-raw, format=BGR, width=128, height=128")),
+        Gst.PadTemplate.new("src_0",
+                            Gst.PadDirection.SRC,
                             Gst.PadPresence.ALWAYS,
-                            Gst.Caps.from_string("video/x-raw, width=128, height=128")),
+                            Gst.Caps.from_string("video/x-raw, format=BGR, width=256, height=256")),
         Gst.PadTemplate.new("src_1",
                             Gst.PadDirection.SRC,
                             Gst.PadPresence.ALWAYS,
-                            Gst.Caps.from_string("video/x-raw, width=256, height=256")),
-        Gst.PadTemplate.new("src_2",
-                            Gst.PadDirection.SRC,
-                            Gst.PadPresence.ALWAYS,
-                            Gst.Caps.from_string("video/x-raw, width=128, height=128")),
+                            Gst.Caps.from_string("video/x-raw, format=BGR, width=128, height=128")),
     )
 
-    def __init__(self):
+
+    def __init__(self, do_op=None):
         super().__init__()
+        self._lock = threading.Lock()
 
-        # Create pads
-        self.sinkpad_1 = Gst.Pad.new_from_template(self.__gsttemplates__[0], "sink_1")
-        self.sinkpad_2 = Gst.Pad.new_from_template(self.__gsttemplates__[1], "sink_2")
-        self.srcpad_1 = Gst.Pad.new_from_template(self.__gsttemplates__[2], "src_1")
-        self.srcpad_2 = Gst.Pad.new_from_template(self.__gsttemplates__[3], "src_2")
+        self._do_op = do_op
 
-        # Set chain function for sink pads
-        self.sinkpad_1.set_chain_function(self.do_chain)
-        self.sinkpad_2.set_chain_function(self.do_chain)
-
-        # Add pads
-        self.add_pad(self.sinkpad_1)
-        self.add_pad(self.sinkpad_2)
-        self.add_pad(self.srcpad_1)
-        self.add_pad(self.srcpad_2)
-
-        self.buffer_1 = None
-        self.buffer_2 = None
-
-    def do_chain(self, pad, parent, buffer):
-        print("do_chain called on", pad.get_name())
-
-        if pad == self.sinkpad_1:
-            self.buffer_1 = buffer
-        elif pad == self.sinkpad_2:
-            self.buffer_2 = buffer
-
-        if self.buffer_1 and self.buffer_2:
-            # Push buffers downstream
-            self.srcpad_1.push(self.buffer_1)
-            self.srcpad_2.push(self.buffer_2)
-
-        return Gst.FlowReturn.OK
-
-
-class GstMultiInOutStreamRunner3(Gst.Element):
-    __gstmetadata__ = ("GstMultiInOutStreamRunner3", "Filter", "Overlay images", "Author")
-    __gsttemplates__ = (
-        Gst.PadTemplate.new("sink_1",
-                            Gst.PadDirection.SINK,
-                            Gst.PadPresence.ALWAYS,
-                            Gst.Caps.from_string("video/x-raw, width=256, height=256")),
-        Gst.PadTemplate.new("sink_2",
-                            Gst.PadDirection.SINK,
-                            Gst.PadPresence.ALWAYS,
-                            Gst.Caps.from_string("video/x-raw, width=128, height=128")),
-        Gst.PadTemplate.new("src_1",
-                            Gst.PadDirection.SRC,
-                            Gst.PadPresence.ALWAYS,
-                            Gst.Caps.from_string("video/x-raw, width=256, height=256")),
-        Gst.PadTemplate.new("src_2",
-                            Gst.PadDirection.SRC,
-                            Gst.PadPresence.ALWAYS,
-                            Gst.Caps.from_string("video/x-raw, width=128, height=128")),
-    )
-
-    def __init__(self):
-        super().__init__()
-        
         # Create pads from templates
+        self.sinkpad_0 = Gst.Pad.new_from_template(
+            self.__gsttemplates__[0], "sink_0")
         self.sinkpad_1 = Gst.Pad.new_from_template(
-            self.__gsttemplates__[0], "sink_1")
-        self.sinkpad_2 = Gst.Pad.new_from_template(
-            self.__gsttemplates__[1], "sink_2")
+            self.__gsttemplates__[1], "sink_1")
+        self.srcpad_0 = Gst.Pad.new_from_template(
+            self.__gsttemplates__[2], "src_0")
         self.srcpad_1 = Gst.Pad.new_from_template(
-            self.__gsttemplates__[2], "src_1")
-        self.srcpad_2 = Gst.Pad.new_from_template(
-            self.__gsttemplates__[3], "src_2")
+            self.__gsttemplates__[3], "src_1")
 
         # Set chain functions for sink pads
+        self.sinkpad_0.set_chain_function(self.chain_0)
         self.sinkpad_1.set_chain_function(self.chain_1)
-        self.sinkpad_2.set_chain_function(self.chain_2)
 
         # Add pads to element
+        self.add_pad(self.sinkpad_0)
         self.add_pad(self.sinkpad_1)
-        self.add_pad(self.sinkpad_2)
+        self.add_pad(self.srcpad_0)
         self.add_pad(self.srcpad_1)
-        self.add_pad(self.srcpad_2)
 
+        self.buffer_0 = None
         self.buffer_1 = None
-        self.buffer_2 = None
+
+
+    def chain_0(self, pad, parent, buffer):
+        with self._lock:
+            print(f"chain_0 called on thread {threading.get_ident()}")
+            self.buffer_0 = buffer
+            if self.buffer_1:
+                self.process_buffers()
+            return Gst.FlowReturn.OK
+
 
     def chain_1(self, pad, parent, buffer):
-        print("chain_1")
-        self.buffer_1 = buffer
-        if self.buffer_2:
-            self.process_buffers()
-        return Gst.FlowReturn.OK
+        with self._lock:
+            print(f"chain_1 called on thread {threading.get_ident()}")
+            self.buffer_1 = buffer
+            if self.buffer_0:
+                self.process_buffers()
+            return Gst.FlowReturn.OK
 
-    def chain_2(self, pad, parent, buffer):
-        print("chain_2")
-        self.buffer_2 = buffer
-        if self.buffer_1:
-            self.process_buffers()
-        return Gst.FlowReturn.OK
 
     def process_buffers(self):
-        print("process_buffers")
+        print("=================================")
+        print(f"process_buffers called on thread {threading.get_ident()}")
         # Process and push to both source pads
-        if self.buffer_1 and self.buffer_2:
-            ret1 = self.srcpad_1.push(self.buffer_1.copy())
-            ret2 = self.srcpad_2.push(self.buffer_2.copy())
-            self.buffer_1 = None
-            self.buffer_2 = None
-            return ret1 and ret2
+
+        if self.buffer_0 and self.buffer_1:
+            buffers = (self.buffer_0, self.buffer_1)
+
+
+            frames = list()
+            # for sinkpad in (self.sinkpad_0, self.sinkpad_1):
+            for sinkpad, buffer in ((self.sinkpad_0, self.buffer_0), (self.sinkpad_1, self.buffer_1)):
+                # Extract data from buffer
+                success, map_info = buffer.map(Gst.MapFlags.READ)
+                if not success:
+                    print("Unexpected failure!")
+                    return Gst.FlowReturn.ERROR
+
+                caps = sinkpad.get_current_caps().get_structure(0)
+                # print("caps:", caps)
+                height, width, channels = caps.get_value("height"), caps.get_value("width"), caps.get_value("channels")
+                # print("data:", len(map_info.data))
+                frame = np.frombuffer(map_info.data, dtype=np.uint8).reshape((height, width, 3))
+                frames.append(frame)
+                buffer.unmap(map_info)
+
+            self._do_op(frames)
+
+            dframe = np.array(frames[0])
+
+            dbuffer0 = Gst.Buffer.new_wrapped(dframe.tobytes())
+            dbuffer1 = Gst.Buffer.new_wrapped(dframe.tobytes())
+
+            # Push buffers downstream
+            self.srcpad_0.push(dbuffer0)
+            self.srcpad_1.push(dbuffer1)
+
         return Gst.FlowReturn.OK
+
+
+    def do_op(self, sink_data):
+        """
+        When using do_op programatically, the user should set do_op in order to define the
+        operation that gets performed on the buffers.
+        When used as a plugin for gstreamer, do_op should be subclassed to carry out the intended
+        operation.
+        """
+        print("doing op")
+        if self._do_op is None:
+            raise ValueError("do_op not set")
+        self._do_op(sink_data)

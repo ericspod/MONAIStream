@@ -8,7 +8,10 @@ from gi.repository import Gst
 import numpy as np
 
 
-class GstStreamRunnerBackend(Gst.Element):
+from monaistream.streamrunners.gstreamer.utils import PadEntry
+
+
+class GstStreamRunnerBackendStatic(Gst.Element):
     __gstmetadata__ = ("GstStreamRunnerBackend", "Filter", "Overlay images", "Author")
 
 
@@ -101,6 +104,114 @@ class GstStreamRunnerBackend(Gst.Element):
                 # Push buffers downstream
                 self.srcpad_0.push(dbuffer0)
                 self.srcpad_1.push(dbuffer1)
+
+            return Gst.FlowReturn.OK
+
+
+    def do_op(self, sink_data):
+        """
+        When using do_op programatically, the user should set do_op in order to define the
+        operation that gets performed on the buffers.
+        When used as a plugin for gstreamer, do_op should be subclassed to carry out the intended
+        operation.
+        """
+        if self._do_op is None:
+            raise ValueError("do_op not set")
+        self._do_op(sink_data)
+
+
+class GstStreamRunnerBackend(Gst.Element):
+    __gstmetadata__ = ("GstStreamRunnerBackend", "Filter", "Overlay images", "Author")
+
+
+    def __init__(self, inputs=None, outputs=None, do_op=None):
+        super().__init__()
+        self._lock = threading.Lock()
+
+        print(f"inputs = {inputs}")
+        if inputs is None:
+            inputs = [
+                PadEntry("sink_0", "video/x-raw, format=BGR, width=256, height=256"),
+                PadEntry("sink_1", "video/x-raw, format=BGR, width=128, height=128"),
+            ]
+        if outputs is None:
+            outputs = [
+                PadEntry("src_0", "video/x-raw, format=BGR, width=256, height=256"),
+                PadEntry("src_1", "video/x-raw, format=BGR, width=128, height=128"),
+            ]
+
+        self._do_op = do_op
+
+        # Create pads
+        sinkpads = list()
+        srcpads = list()
+        print(f"inputs = {inputs}")
+        for p in inputs:
+            template = Gst.PadTemplate.new(
+                p.name, Gst.PadDirection.SINK, Gst.PadPresence.ALWAYS, Gst.Caps.from_string(p.caps_str))
+            sinkpads.append(Gst.Pad.new_from_template(template, p.name))
+        for p in outputs:
+            template = Gst.PadTemplate.new(
+                p.name, Gst.PadDirection.SRC, Gst.PadPresence.ALWAYS, Gst.Caps.from_string(p.caps_str))
+            srcpads.append(Gst.Pad.new_from_template(template, p.name))
+    
+        # Set chain function for sink pads
+        for s in sinkpads:
+            s.set_chain_function(self.do_chain)
+
+        # Add pads
+        for s in sinkpads:
+            self.add_pad(s)
+            self.add_pad(s)
+        for s in srcpads:
+            self.add_pad(s)
+            self.add_pad(s)
+
+        # self.buffer_0 = None
+        # self.buffer_1 = None
+        self._buffers = [None for _ in self.sinkpads]
+
+        # self.sinkpad_0 = self.sinkpads[0]
+        # self.sinkpad_1 = self.sinkpads[1]
+        # self.srcpad_0 = self.srcpads[0]
+        # self.srcpad_1 = self.srcpads[1]
+
+
+    def do_chain(self, pad, parent, buffer):
+
+        with self._lock:
+            print("=======================================")
+            print(f"do_chain called on {pad.get_name()} with thread id {threading.get_ident()}")
+            pad_index = self.sinkpads.index(pad) if pad in self.sinkpads else None
+            if pad_index is None:
+                print("Unexpected pad!")
+                return Gst.FlowReturn.ERROR
+            self._buffers[pad_index] = buffer
+
+            if all(self._buffers):
+
+                frames = list()
+                for sinkpad, buffer in zip(self.sinkpads, self._buffers):
+                    # Extract data from buffer
+                    success, map_info = buffer.map(Gst.MapFlags.READ)
+                    if not success:
+                        print("Unexpected failure!")
+                        return Gst.FlowReturn.ERROR
+
+                    caps = sinkpad.get_current_caps().get_structure(0)
+                    height, width, channels = caps.get_value("height"), caps.get_value("width"), caps.get_value("channels")
+                    frame = np.frombuffer(map_info.data, dtype=np.uint8).reshape((height, width, 3))
+                    frames.append(frame)
+                    buffer.unmap(map_info)
+
+                self._do_op(frames)
+
+                dframe = np.array(frames[0])
+                dframes = [dframe for _ in frames]
+
+                for b, p in zip(dframes, self.srcpads):
+                    dbuffer = Gst.Buffer.new_wrapped(b.tobytes())
+                    p.push(dbuffer)
 
             return Gst.FlowReturn.OK
 

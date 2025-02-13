@@ -25,13 +25,6 @@ def parse_node_entry(entry):
 
 
 
-@dataclass(frozen=True)
-class NodeEntry:
-    name: str
-    url: str
-
-
-
 class StreamRunner:
 
     def __init__(self, queue_policy=None, backend=None):

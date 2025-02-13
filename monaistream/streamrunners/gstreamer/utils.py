@@ -1,19 +1,32 @@
+from dataclasses import dataclass
+
 import gi
 gi.require_version('Gst', '1.0')
 from gi.repository import Gst, GLib, GObject
 
 
+def parse_node_entry(entry):
+    element = Gst.parse_bin_from_description(
+        entry.descriptor, False, Gst.ParseFlags.NO_SINGLE_ELEMENT_BIN)
+
+    if not element:
+        raise ValueError(f"Failed to parse element {entry.descriptor}")
+
+    return element
+
+
+
 def register(runner_type, runner_alias):
     RunnerType = GObject.type_register(runner_type)
     if not Gst.Element.register(None, runner_alias, Gst.Rank.NONE, RunnerType):
-        raise RuntimeError(f"Failed to register {runner_alias}; you may be missing gst-python plugins")
+        raise ValueError(f"Failed to register {runner_alias}; you may be missing gst-python plugins")
 
 
 
 def create_registerable_plugin(base_type, class_name, do_op):
     # TODO: is this class actually gstreamer specific?
     def init_with_do_op(self):
-        base_type.__init__(self, do_op)
+        base_type.__init__(self, do_op=do_op)
 
     sub_class_type = type(
         class_name,
@@ -46,3 +59,15 @@ def run_pipeline(pipeline):
             # pipeline.get_state(Gst.CLOCK_TIME_NONE)
         if loop and loop.is_running():
             loop.quit()
+
+
+
+@dataclass(frozen=True)
+class NodeEntry:
+    name: str
+    description: str
+
+@dataclass(frozen=True)
+class PadEntry:
+    name: str
+    caps_str: str

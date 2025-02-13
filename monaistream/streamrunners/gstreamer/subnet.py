@@ -30,11 +30,19 @@ class GstStreamRunnerSubnet:
             if output_url.name not in runner.output_names:
                 raise ValueError(f"output {output_url.name} not in {runner.output_names}")
 
-        # create the input and output
+        self._pipeline = Gst.Pipeline().new("pipeline")
         for input_url in input_urls:
-            self.inputs.append(parse_node_entry(input_url))
+            element = parse_node_entry(input_url.description)
+            self.inputs.append(element)
+            self._pipeline.add(element, input_url.name)
 
         for output_url in output_urls:
-            self.outputs.append(parse_node_entry(output_url))
+            element = parse_node_entry(output_url.description)
+            self.outputs.append(element)
+            self._pipeline.add(element, output_url.name)
 
-        self._pipeline = Gst.Pipeline().new("pipeline")
+        for element in self.inputs:
+            element.link_pads("src", runner, element.get_name())
+
+        for element in self.outputs:
+            runner.link_pads(element.get_name(), element)
