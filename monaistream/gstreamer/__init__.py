@@ -32,9 +32,10 @@ if HAS_GI:
     os.environ["GST_PLUGIN_PATH"] = plugin_path  # set the plugin path so that this directory is searched
 
     gi.require_version("Gst", "1.0")
+    gi.require_version("GObject", "2.0")
     gi.require_version("GstBase", "1.0")
     gi.require_version("GstVideo", "1.0")
-    from gi.repository import Gst
+    from gi.repository import Gst, GLib, GObject, GstBase, GstVideo
 
     Gst.init([])
     # use GST_DEBUG instead https://gstreamer.freedesktop.org/documentation/gstreamer/running.html
@@ -42,7 +43,7 @@ if HAS_GI:
     # Gst.debug_set_default_threshold(5)
 
     from monaistream.gstreamer.utils import *
-    from monaistream.gstreamer.numpy_transforms import *
+    # from monaistream.gstreamer.numpy_transforms import *
 
     # TODO: import more things here
 

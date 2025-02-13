@@ -8,7 +8,7 @@ Experimental revival of this repo, please comment but don't expect anything to b
 
 2. Run `xhost +local:docker` to grant X permissions to Docker containers
 
-3. Run: `docker run -ti --rm -e DISPLAY --gpus device=1 -v $PWD:/opt/monaistream monaistream`
+3. Run: `docker run -ti --rm -e DISPLAY --network host --gpus device=1 -v $PWD:/opt/monaistream monaistream`
 
 
 ## Numpy Transform Test
