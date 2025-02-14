@@ -18,8 +18,8 @@ class DummyModel:
 
 
     def __call__(self, engine, batch):
-        print(batch)
         # do a bit of work
+        print("DummyModel: __call__")
         for i in range(10):
             data = torch.rand(batch[0].shape, generator=self._rng) * 2 - 1
             batch[0] = batch[0] * data

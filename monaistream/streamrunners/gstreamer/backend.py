@@ -147,6 +147,7 @@ class GstStreamRunnerBackend(Gst.Element):
 
         self._array_type = array_type
         self._frombuffer = np.frombuffer if array_type == "numpy" else torch.frombuffer
+        self._tobuffer = self._from_numpy if array_type == "numpy" else self._from_torch
         self._do_op = do_op
 
         # Create pads
@@ -227,7 +228,7 @@ class GstStreamRunnerBackend(Gst.Element):
                 results = self.do_op(frames)
 
                 for b, p in zip(results, self.srcpads):
-                    dbuffer = Gst.Buffer.new_wrapped(b.tobytes())
+                    dbuffer = Gst.Buffer.new_wrapped(self._tobuffer(b))
                     p.push(dbuffer)
 
             return Gst.FlowReturn.OK
@@ -243,3 +244,11 @@ class GstStreamRunnerBackend(Gst.Element):
         if self._do_op is None:
             raise ValueError("do_op not set")
         return self._do_op(sink_data)
+
+
+    def _from_numpy(self, data):
+        return data.tobytes()
+
+
+    def _from_torch(self, data):
+        return data.numpy().tobytes()

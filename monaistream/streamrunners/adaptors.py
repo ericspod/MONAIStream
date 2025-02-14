@@ -38,4 +38,5 @@ class IgniteEngineAdaptor:
         print("IgniteEngineAdaptor: __call__")
         self.data_loader.set_payload(src)
         self.engine.run(self.data_loader)
-        return self.engine.state
+        print("engine.state.output:", type(self.engine.state.output))
+        return self.engine.state.output
