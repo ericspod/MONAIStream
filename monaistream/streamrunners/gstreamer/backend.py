@@ -7,6 +7,8 @@ from gi.repository import Gst
 
 import numpy as np
 
+import torch
+
 
 from monaistream.streamrunners.gstreamer.utils import PadEntry
 
@@ -127,7 +129,7 @@ class GstStreamRunnerBackendStatic(Gst.Element):
 class GstStreamRunnerBackend(Gst.Element):
     __gstmetadata__ = ("GstStreamRunnerBackend", "Filter", "Overlay images", "Author")
 
-    def __init__(self, inputs=None, outputs=None, do_op=None):
+    def __init__(self, inputs=None, outputs=None, do_op=None, array_type="numpy"):
         super().__init__()
         self._lock = threading.Lock()
 
@@ -143,7 +145,8 @@ class GstStreamRunnerBackend(Gst.Element):
         #         PadEntry("src_1", "video/x-raw, format=BGR, width=128, height=128"),
         #     ]
 
-
+        self._array_type = array_type
+        self._frombuffer = np.frombuffer if array_type == "numpy" else torch.frombuffer
         self._do_op = do_op
 
         # Create pads
@@ -172,7 +175,6 @@ class GstStreamRunnerBackend(Gst.Element):
             self.add_pad(s)
 
         self._buffers = [None for _ in self.sinkpads]
-        print(dir(self))
 
 
     def add_input(self, name, format):
@@ -216,7 +218,9 @@ class GstStreamRunnerBackend(Gst.Element):
 
                     caps = sinkpad.get_current_caps().get_structure(0)
                     height, width, channels = caps.get_value("height"), caps.get_value("width"), caps.get_value("channels")
-                    frame = np.frombuffer(map_info.data, dtype=np.uint8).reshape((height, width, 3))
+                    dtype = np.uint8 if self._array_type == "numpy" else torch.uint8
+                    frame = self._frombuffer(map_info.data, dtype=dtype).reshape((height, width, 3))
+
                     frames.append(frame)
                     buffer.unmap(map_info)
 

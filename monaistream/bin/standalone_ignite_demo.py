@@ -18,10 +18,11 @@ class DummyModel:
 
 
     def __call__(self, engine, batch):
+        print(batch)
         # do a bit of work
         for i in range(10):
-            data = torch.random(-0.5, 2.0, batch.shape)
-            batch = batch * data
+            data = torch.rand(batch[0].shape, generator=self._rng) * 2 - 1
+            batch[0] = batch[0] * data
         return batch
 
 
@@ -50,8 +51,9 @@ if __name__ == "__main__":
     runner = StreamRunner(input_configs,
                           output_configs,
                           queue_config,
-                          do_op=adaptor,
-                          backend="gstreamer")
+                          backend="gstreamer",
+                          array_type="torch",
+                          do_op=adaptor)
 
     subnet = GstStreamRunnerSubnet(runner,
                                    subnet_inputs,

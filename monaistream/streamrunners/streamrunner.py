@@ -10,11 +10,11 @@ def parse_queue_policy(policy):
 
 
 
-def parse_backend(backend):
+def parse_backend(backend, array_type):
     supported_backends = ("gstreamer",)
     if isinstance(backend, str):
         if backend == "gstreamer":
-            return GstStreamRunnerBackend()
+            return GstStreamRunnerBackend(array_type=array_type)
         else:
             raise ValueError(f"unknown backend {backend}; must be one of {supported_backends}")
     return GstStreamRunnerBackend()
@@ -38,13 +38,14 @@ class StreamRunner:
                  output_configs=None,
                  queue_policy=None,
                  backend="gstreamer",
+                 array_type="numpy",
                  do_op=None
     ):
         # TODO: support passing in a queue policy / queue backend
         # TODO: support selecting / passing in a backend
         # TODO: passing in inputs / outputs on init
         self._queue = parse_queue_policy(queue_policy)
-        self._backend = parse_backend(backend)
+        self._backend = parse_backend(backend, array_type)
         print("backend:", self._backend)
         self._backend.set_do_op(do_op)
 
