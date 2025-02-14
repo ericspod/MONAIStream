@@ -7,7 +7,8 @@ from gi.repository import Gst, GLib, GObject
 
 def parse_node_entry(entry):
     element = Gst.parse_bin_from_description_full(
-        entry.description, False, None, Gst.ParseFlags.NO_SINGLE_ELEMENT_BINS)
+        # entry.description, False, None, Gst.ParseFlags.NO_SINGLE_ELEMENT_BINS)
+        entry.description, True, None, Gst.ParseFlags.PLACE_IN_BIN)
 
     if not element:
         raise ValueError(f"Failed to parse element {entry.description}")
@@ -42,6 +43,8 @@ def create_registerable_plugin(base_type, class_name, inputs, outputs, do_op):
 
 def run_pipeline(pipeline):
     pipeline.set_state(Gst.State.PLAYING)
+    print("logging pipeline graph")
+    Gst.debug_bin_to_dot_file(pipeline, Gst.DebugGraphDetails.ALL, 'pipeline_state')
 
     loop = GLib.MainLoop()
     try:

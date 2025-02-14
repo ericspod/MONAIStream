@@ -7,7 +7,7 @@ from ignite.engine import Engine
 from monaistream.streamrunners.streamrunner import StreamRunner
 from monaistream.streamrunners.adaptors import StreamingDataLoader, IgniteEngineAdaptor
 from monaistream.streamrunners.gstreamer.subnet import GstStreamRunnerSubnet
-from monaistream.streamrunners.gstreamer.utils import PadEntry, SubnetEntry
+from monaistream.streamrunners.gstreamer.utils import run_pipeline, PadEntry, SubnetEntry
 
 
 
@@ -58,4 +58,4 @@ if __name__ == "__main__":
                                    subnet_outputs)
 
     # subnet.run()
-    runner.run()
+    run_pipeline(subnet.pipeline)

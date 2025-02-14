@@ -35,6 +35,7 @@ class IgniteEngineAdaptor:
 
     def __call__(self, src):
         # provide data sample 'src' to workflow dataset
+        print("IgniteEngineAdaptor: __call__")
         self.data_loader.set_payload(src)
         self.engine.run(self.data_loader)
         return self.engine.state

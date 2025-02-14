@@ -42,13 +42,22 @@ class GstStreamRunnerSubnet:
             print("element:", element)
             self._pipeline.add(element)
 
+        self._pipeline.add(runner.backend)
+
         for output_url in output_urls:
             element = parse_node_entry(output_url)
             self.outputs.append(element)
             self._pipeline.add(element)
 
-        for element in self.inputs:
-            element.link_pads("src", runner.backend, element.get_name())
+        for element, desc in zip(self.inputs, input_urls):
+            print("input_desc pad name:", desc.name)
+            element.link_pads("src", runner.backend, desc.name)
 
-        for element in self.outputs:
-            runner.backend.link_pads(element.get_name(), element)
+        for element, desc in zip(self.outputs, output_urls):
+            print("output_desc pad name =", desc.name)
+            print("element:", element)
+            runner.backend.link_pads(desc.name, element, "sink")
+
+    @property
+    def pipeline(self):
+        return self._pipeline
