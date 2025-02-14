@@ -30,11 +30,11 @@ if __name__ == "__main__":
     adaptor = IgniteEngineAdaptor(engine)
 
     input_configs = [
-        PadEntry("src_0", "video/x-raw,format=BGR,width=256,height=256"),
+        PadEntry("sink_0", "video/x-raw,format=BGR,width=256,height=256"),
     ]
 
     output_configs = [
-        PadEntry("sink_0", "video/x-raw,format=BGR,width=256,height=256"),
+        PadEntry("src_0", "video/x-raw,format=BGR,width=256,height=256"),
     ]
 
     subnet_inputs = [
@@ -54,7 +54,8 @@ if __name__ == "__main__":
                           backend="gstreamer")
 
     subnet = GstStreamRunnerSubnet(runner,
-                                subnet_inputs,
-                                subnet_outputs)
+                                   subnet_inputs,
+                                   subnet_outputs)
 
-    subnet.run()
+    # subnet.run()
+    runner.run()

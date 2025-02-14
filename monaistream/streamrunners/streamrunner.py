@@ -71,9 +71,19 @@ class StreamRunner:
         return self._remove_input_or_output(name, False)
 
 
-    # @property
-    # def backend(self):
-    #     return self._backend
+    @property
+    def input_names(self):
+        return tuple(i.get_name() for i in self._backend.sinkpads)
+
+
+    @property
+    def output_names(self):
+        return tuple(o.get_name() for o in self._backend.srcpads)
+
+
+    @property
+    def backend(self):
+        return self._backend
 
 
     def register(self, name, permanent=False):

@@ -172,6 +172,7 @@ class GstStreamRunnerBackend(Gst.Element):
             self.add_pad(s)
 
         self._buffers = [None for _ in self.sinkpads]
+        print(dir(self))
 
 
     def add_input(self, name, format):

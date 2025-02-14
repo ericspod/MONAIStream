@@ -6,11 +6,11 @@ from gi.repository import Gst, GLib, GObject
 
 
 def parse_node_entry(entry):
-    element = Gst.parse_bin_from_description(
-        entry.descriptor, False, Gst.ParseFlags.NO_SINGLE_ELEMENT_BIN)
+    element = Gst.parse_bin_from_description_full(
+        entry.description, False, None, Gst.ParseFlags.NO_SINGLE_ELEMENT_BINS)
 
     if not element:
-        raise ValueError(f"Failed to parse element {entry.descriptor}")
+        raise ValueError(f"Failed to parse element {entry.description}")
 
     return element
 
