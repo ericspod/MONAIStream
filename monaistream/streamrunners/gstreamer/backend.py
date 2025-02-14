@@ -11,6 +11,9 @@ import numpy as np
 from monaistream.streamrunners.gstreamer.utils import PadEntry
 
 
+Gst.init(None)
+
+
 class GstStreamRunnerBackendStatic(Gst.Element):
     __gstmetadata__ = ("GstStreamRunnerBackend", "Filter", "Overlay images", "Author")
 
@@ -120,41 +123,44 @@ class GstStreamRunnerBackendStatic(Gst.Element):
         self._do_op(sink_data)
 
 
+
 class GstStreamRunnerBackend(Gst.Element):
     __gstmetadata__ = ("GstStreamRunnerBackend", "Filter", "Overlay images", "Author")
-
 
     def __init__(self, inputs=None, outputs=None, do_op=None):
         super().__init__()
         self._lock = threading.Lock()
 
         print(f"inputs = {inputs}")
-        if inputs is None:
-            inputs = [
-                PadEntry("sink_0", "video/x-raw, format=BGR, width=256, height=256"),
-                PadEntry("sink_1", "video/x-raw, format=BGR, width=128, height=128"),
-            ]
-        if outputs is None:
-            outputs = [
-                PadEntry("src_0", "video/x-raw, format=BGR, width=256, height=256"),
-                PadEntry("src_1", "video/x-raw, format=BGR, width=128, height=128"),
-            ]
+        # if inputs is None:
+        #     inputs = [
+        #         PadEntry("sink_0", "video/x-raw, format=BGR, width=256, height=256"),
+        #         PadEntry("sink_1", "video/x-raw, format=BGR, width=128, height=128"),
+        #     ]
+        # if outputs is None:
+        #     outputs = [
+        #         PadEntry("src_0", "video/x-raw, format=BGR, width=256, height=256"),
+        #         PadEntry("src_1", "video/x-raw, format=BGR, width=128, height=128"),
+        #     ]
+
 
         self._do_op = do_op
 
         # Create pads
         sinkpads = list()
         srcpads = list()
-        print(f"inputs = {inputs}")
-        for p in inputs:
-            template = Gst.PadTemplate.new(
-                p.name, Gst.PadDirection.SINK, Gst.PadPresence.ALWAYS, Gst.Caps.from_string(p.caps_str))
-            sinkpads.append(Gst.Pad.new_from_template(template, p.name))
-        for p in outputs:
-            template = Gst.PadTemplate.new(
-                p.name, Gst.PadDirection.SRC, Gst.PadPresence.ALWAYS, Gst.Caps.from_string(p.caps_str))
-            srcpads.append(Gst.Pad.new_from_template(template, p.name))
-    
+
+        if inputs is not None:
+            for p in inputs:
+                template = Gst.PadTemplate.new(
+                    p.name, Gst.PadDirection.SINK, Gst.PadPresence.ALWAYS, Gst.Caps.from_string(p.format))
+                sinkpads.append(Gst.Pad.new_from_template(template, p.name))
+        if outputs is not None:
+            for p in outputs:
+                template = Gst.PadTemplate.new(
+                    p.name, Gst.PadDirection.SRC, Gst.PadPresence.ALWAYS, Gst.Caps.from_string(p.format))
+                srcpads.append(Gst.Pad.new_from_template(template, p.name))
+
         # Set chain function for sink pads
         for s in sinkpads:
             s.set_chain_function(self.do_chain)
@@ -162,19 +168,28 @@ class GstStreamRunnerBackend(Gst.Element):
         # Add pads
         for s in sinkpads:
             self.add_pad(s)
-            self.add_pad(s)
         for s in srcpads:
             self.add_pad(s)
-            self.add_pad(s)
 
-        # self.buffer_0 = None
-        # self.buffer_1 = None
         self._buffers = [None for _ in self.sinkpads]
 
-        # self.sinkpad_0 = self.sinkpads[0]
-        # self.sinkpad_1 = self.sinkpads[1]
-        # self.srcpad_0 = self.srcpads[0]
-        # self.srcpad_1 = self.srcpads[1]
+
+    def add_input(self, name, format):
+        template = Gst.PadTemplate.new(name, Gst.PadDirection.SINK, Gst.PadPresence.ALWAYS, Gst.Caps.from_string(format))
+        pad = Gst.Pad.new_from_template(template, name)
+        pad.set_chain_function(self.do_chain)
+        self.add_pad(pad)
+
+
+    def add_output(self, name, format):
+        template = Gst.PadTemplate.new(name, Gst.PadDirection.SRC, Gst.PadPresence.ALWAYS, Gst.Caps.from_string(format))
+        pad = Gst.Pad.new_from_template(template, name)
+        self.add_pad(pad)
+        self._buffers = [None for _ in self.sinkpads]
+
+
+    def set_do_op(self, do_op):
+        self._do_op = do_op
 
 
     def do_chain(self, pad, parent, buffer):
@@ -204,12 +219,9 @@ class GstStreamRunnerBackend(Gst.Element):
                     frames.append(frame)
                     buffer.unmap(map_info)
 
-                self._do_op(frames)
+                results = self.do_op(frames)
 
-                dframe = np.array(frames[0])
-                dframes = [dframe for _ in frames]
-
-                for b, p in zip(dframes, self.srcpads):
+                for b, p in zip(results, self.srcpads):
                     dbuffer = Gst.Buffer.new_wrapped(b.tobytes())
                     p.push(dbuffer)
 
@@ -225,4 +237,4 @@ class GstStreamRunnerBackend(Gst.Element):
         """
         if self._do_op is None:
             raise ValueError("do_op not set")
-        self._do_op(sink_data)
+        return self._do_op(sink_data)

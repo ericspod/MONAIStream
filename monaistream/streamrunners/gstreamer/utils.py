@@ -23,10 +23,10 @@ def register(runner_type, runner_alias):
 
 
 
-def create_registerable_plugin(base_type, class_name, do_op):
+def create_registerable_plugin(base_type, class_name, inputs, outputs, do_op):
     # TODO: is this class actually gstreamer specific?
     def init_with_do_op(self):
-        base_type.__init__(self, do_op=do_op)
+        base_type.__init__(self, inputs=inputs, outputs=outputs, do_op=do_op)
 
     sub_class_type = type(
         class_name,
@@ -63,11 +63,13 @@ def run_pipeline(pipeline):
 
 
 @dataclass(frozen=True)
-class NodeEntry:
-    name: str
-    description: str
-
-@dataclass(frozen=True)
 class PadEntry:
     name: str
-    caps_str: str
+    format: str
+
+
+
+@dataclass(frozen=True)
+class SubnetEntry:
+    name: str
+    description: str

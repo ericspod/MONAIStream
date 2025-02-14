@@ -11,6 +11,12 @@ def parse_queue_policy(policy):
 
 
 def parse_backend(backend):
+    supported_backends = ("gstreamer",)
+    if isinstance(backend, str):
+        if backend == "gstreamer":
+            return GstStreamRunnerBackend()
+        else:
+            raise ValueError(f"unknown backend {backend}; must be one of {supported_backends}")
     return GstStreamRunnerBackend()
 
 
@@ -27,34 +33,47 @@ def parse_node_entry(entry):
 
 class StreamRunner:
 
-    def __init__(self, queue_policy=None, backend=None):
+    def __init__(self,
+                 input_configs=None,
+                 output_configs=None,
+                 queue_policy=None,
+                 backend="gstreamer",
+                 do_op=None
+    ):
         # TODO: support passing in a queue policy / queue backend
         # TODO: support selecting / passing in a backend
         # TODO: passing in inputs / outputs on init
-
         self._queue = parse_queue_policy(queue_policy)
         self._backend = parse_backend(backend)
+        print("backend:", self._backend)
+        self._backend.set_do_op(do_op)
 
+        if input_configs is not None:
+            for c in input_configs:
+                self.add_input(c.name, c.format)
+        if output_configs is not None:
+            for c in output_configs:
+                self.add_output(c.name, c.format)
 
     def add_input(self, name, format):
-        return self._add_input_or_output(name, format, self.inputs)
+        return self._add_input_or_output(name, format, True)
 
 
     def remove_input(self, name):
-        return self._remove_input_or_output(name, self.inputs)
+        return self._remove_input_or_output(name, True)
 
 
     def add_output(self, name, format):
-        return self._add_input_or_output(name, format, self.outputs)
+        return self._add_input_or_output(name, format, False)
 
 
     def remove_output(self, name):
-        return self._remove_input_or_output(name, self.outputs)
+        return self._remove_input_or_output(name, False)
 
 
-    @property.getter
-    def backend(self):
-        return self._backend
+    # @property
+    # def backend(self):
+    #     return self._backend
 
 
     def register(self, name, permanent=False):
@@ -69,13 +88,14 @@ class StreamRunner:
         raise NotImplementedError()
 
 
-    def _add_input_or_output(self, name, format, collection):
+    def _add_input_or_output(self, name, format, is_input):
         # TODO: this should only be possible to do in certain StreamRunner states
         # TODO: name clash policy
         check_input_format(format)
-        collection[name] = format
-
-        raise NotImplementedError()
+        if is_input:
+            self._backend.add_input(name, format)
+        else:
+            self._backend.add_output(name, format)
 
 
     def _remove_input_or_output(self, name, collection):

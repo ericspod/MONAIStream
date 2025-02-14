@@ -19,7 +19,8 @@ from monaistream.streamrunners.gstreamer.utils import (
 Gst.init()
 
 
-from monaistream.streamrunners.gstreamer.backend import GstStreamRunnerBackend
+from monaistream.streamrunners.gstreamer.backend import GstStreamRunnerBackend, GstStreamRunnerBackendStatic
+from monaistream.streamrunners.gstreamer.utils import PadEntry
 
 
 FORMATS = "{RGBx,BGRx,xRGB,xBGR,RGBA,BGRA,ARGB,ABGR,RGB,BGR}"
@@ -31,13 +32,18 @@ base_class = GstStreamRunnerBackend
 
 class MyAdaptorOp(base_class):
 
-    def __init__(self,):
-        super().__init__(do_op)
+    def __init__(self):
+        inputs = (PadEntry("sink_0", "video/x-raw, format=BGR, width=256, height=256"),
+                PadEntry("sink_1", "video/x-raw, format=BGR, width=128, height=128"))
+        outputs = (PadEntry("src_0", "video/x-raw, format=BGR, width=256, height=256"),
+                PadEntry("src_1", "video/x-raw, format=BGR, width=128, height=128"))
+        super().__init__(inputs=inputs, outputs=outputs, do_op=do_op)
 
 
 
 def do_op(input_data):
     print(f"got source data with shape {tuple(d.shape for d in input_data)}")
+    return input_data
 
 
 
@@ -113,18 +119,35 @@ if __name__ == '__main__':
         "myop.src_1 ! queue ! videoconvert ! fakesink"
     )
 
+    inputs = (PadEntry("sink_0", "video/x-raw, format=BGR, width=256, height=256"),
+              PadEntry("sink_1", "video/x-raw, format=BGR, width=128, height=128"))
+    outputs = (PadEntry("src_0", "video/x-raw, format=BGR, width=256, height=256"),
+               PadEntry("src_1", "video/x-raw, format=BGR, width=128, height=128"))
+
     if args.method != methods[2]:
         if args.method == methods[0]:
             runner_type = MyAdaptorOp
         else: # dynamic
             runner_type = create_registerable_plugin(base_class,
                                                     "DynamicAdaptorOp",
+                                                    inputs,
+                                                    outputs,
                                                     do_op)
         register(runner_type, "myop")
         pipeline = Gst.parse_launch(pipeline_descriptor)
         # run_pipeline(runner_type, "myop", pipeline_descriptor)
         run_pipeline(pipeline)
     else: # code
-        runner = base_class(do_op)
+        runner = base_class(do_op=do_op)
+        for i in inputs:
+            runner.add_input(i.name, i.format)
+        # runner.add_input("sink_0", f"video/x-raw, format=BGR, width=256, height=256")
+        # runner.add_input("sink_1", f"video/x-raw, format=BGR, width=128, height=128")
+        for o in outputs:
+            runner.add_output(o.name, o.format)
+        # runner.add_output("src_0", f"video/x-raw, format=BGR, width=256, height=256")
+        # runner.add_output("src_1", f"video/x-raw, format=BGR, width=128, height=128")
+        print("runner sink_pads:", runner.sinkpads)
+        print("runner_src_pads:", runner.srcpads)
         pipeline = construct_pipeline(runner)
         run_pipeline(pipeline)
